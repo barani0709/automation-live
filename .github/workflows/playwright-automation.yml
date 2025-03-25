@@ -3,8 +3,11 @@ name: Playwright Automation
 on:
   workflow_dispatch:
     inputs:
+      automation:
+        description: 'Which automation to run (e.g., msl_detailed or dr_service)'
+        required: true
       input_json:
-        description: 'Input JSON for month, year, and yearIdMap'
+        description: 'Input JSON string to pass to script (months, year, folderId, etc.)'
         required: true
 
 jobs:
@@ -25,7 +28,8 @@ jobs:
           npm install
           npx playwright install
 
-      - name: 🚀 Run Playwright script
+      - name: 🚀 Run selected Playwright script
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
-        run: node login_detailed.js
+        run: |
+          node automations/${{ github.event.inputs.automation }}.js
