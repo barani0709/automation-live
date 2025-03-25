@@ -1,4 +1,9 @@
-import { exec } from 'child_process';
+import fetch from 'node-fetch';
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const REPO_OWNER = 'barani0709';
+const REPO_NAME = 'automation-live';
+const WORKFLOW_FILENAME = 'playwright-automation.yml'; // Match your GitHub Actions filename
 
 export async function handler(event) {
   if (event.httpMethod !== 'POST') {
@@ -10,32 +15,42 @@ export async function handler(event) {
 
   try {
     const body = JSON.parse(event.body);
-    const inputJson = JSON.stringify(body).replace(/"/g, '\\"');
+    const inputJson = JSON.stringify(body);
 
-    const command = `npx cross-env INPUT_JSON="${inputJson}" node login_detailed.js`;
+    const dispatchURL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${WORKFLOW_FILENAME}/dispatches`;
 
-    console.log('🚀 Triggering automation with:', body);
-
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error('❌ Error:', error.message);
-        return;
-      }
-      if (stderr) {
-        console.error('⚠️ stderr:', stderr);
-      }
-      console.log('✅ stdout:', stdout);
+    const response = await fetch(dispatchURL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ref: 'main',
+        inputs: {
+          input_json: inputJson
+        }
+      })
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'Automation triggered', input: body })
-    };
+    if (response.ok) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ message: 'GitHub Action triggered successfully' })
+      };
+    } else {
+      const errText = await response.text();
+      return {
+        statusCode: 500,
+        body: `GitHub API error: ${errText}`
+      };
+    }
+
   } catch (err) {
-    console.error('❌ Failed to process request:', err.message);
     return {
       statusCode: 500,
-      body: 'Internal Server Error'
+      body: `Function error: ${err.message}`
     };
   }
 }
