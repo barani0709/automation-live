@@ -1,10 +1,12 @@
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
 
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
-  months: ['Jan'],  // default fallback
+  months: ['Jan'],
   year: 2025,
   folderId: ''
 };
@@ -28,9 +30,11 @@ try {
 const months = input.months;
 const targetYear = input.year;
 const folderId = input.folderId;
+const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
+
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
 async function processDivisions() {
-  const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
   await fs.mkdir(downloadsPath, { recursive: true });
 
   const divisions = [
@@ -54,7 +58,6 @@ async function processDivisions() {
       const page = await context.newPage();
 
       try {
-        // Login
         await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
           timeout: 60000,
           waitUntil: 'domcontentloaded'
@@ -62,7 +65,6 @@ async function processDivisions() {
         await page.locator('#txtUserName').fill('E00134');
         await page.locator('#txtPassword').fill('Elbrit9999');
         await page.locator('#btnLogin').click();
-
         await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').waitFor({ state: 'visible', timeout: 10000 });
         await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').click();
 
@@ -74,23 +76,23 @@ async function processDivisions() {
               waitUntil: 'domcontentloaded'
             });
 
-            // Select From Month-Year
+            // From month-year
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
             await page.locator('#changeYearMP').click({ force: true });
-            await page.locator('//*[@id="y3"]').click({ force: true }); // Still static for now
+            await page.locator('//*[@id="y3"]').click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
-            // Select To Month-Year
+            // To month-year
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
             await page.locator('#changeYearMP').click({ force: true });
             await page.locator('//*[@id="y3"]').click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
-            // Select Division
+            // Division
             await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
             await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and contains(@class, 'dxeListBoxItem') and text()='${division}']`).click();
 
-            // Download the report
+            // Download
             const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
             await page.getByRole('button', { name: 'Download' }).click();
             const download = await downloadPromise;
@@ -112,11 +114,53 @@ async function processDivisions() {
         await page.close();
       }
     }
+
+    // ✅ Send files to webhook
+    await sendFilesToN8N(downloadsPath, folderId);
+
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
   } finally {
     await browser.close();
     console.log(`\n✅ All divisions processed successfully for year ${targetYear}!`);
+  }
+}
+
+async function sendFilesToN8N(directory, folderId = '') {
+  try {
+    const files = await fs.readdir(directory);
+    if (files.length === 0) {
+      console.log('📭 No files to send.');
+      return;
+    }
+
+    const formData = new FormData();
+    const fileNames = [];
+
+    for (const file of files) {
+      const filePath = path.join(directory, file);
+      const fileStream = await fs.readFile(filePath);
+      formData.append('files', fileStream, file);
+      fileNames.push(file);
+    }
+
+    formData.append('file_names', fileNames.join(','));
+
+    const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}`;
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      body: formData,
+      headers: formData.getHeaders(),
+    });
+
+    if (response.ok) {
+      console.log('📤 Files successfully sent to n8n.');
+    } else {
+      console.error('❌ Failed to send files to n8n:', await response.text());
+    }
+  } catch (error) {
+    console.error('❌ Error sending files to n8n:', error.message);
   }
 }
 
