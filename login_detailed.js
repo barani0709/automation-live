@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 // Constants
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 const DOWNLOADS_PATH = path.join('downloads');
 
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
@@ -13,7 +12,8 @@ let input = {
     months: ['Jan'],
     startYear: 2025,
     endYear: 2025,
-    yearIdMap: { 2025: 'y3' }
+    yearIdMap: { 2025: 'y3' },
+    folderId: '' // ⬅️ new input
 };
 
 try {
@@ -23,7 +23,8 @@ try {
             months: parsed.months || input.months,
             startYear: parsed.startYear || input.startYear,
             endYear: parsed.endYear || input.endYear,
-            yearIdMap: parsed.yearIdMap || input.yearIdMap
+            yearIdMap: parsed.yearIdMap || input.yearIdMap,
+            folderId: parsed.folderId || input.folderId
         };
         console.log('✅ Dynamic input loaded:', input);
     } else {
@@ -38,6 +39,7 @@ const months = input.months;
 const startYear = input.startYear;
 const endYear = input.endYear;
 const yearIdMap = input.yearIdMap;
+const folderId = input.folderId;
 
 // === Main Automation ===
 async function processDivisions() {
@@ -56,7 +58,7 @@ async function processDivisions() {
         'VASCO'
     ];
 
-    const browser = await chromium.launch({ headless: true }); // ✅ Use headless for automation
+    const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ acceptDownloads: true });
 
     try {
@@ -89,9 +91,7 @@ async function processDivisions() {
                             await page.locator('#changeYearMP').click({ force: true });
 
                             const yearId = yearIdMap[year];
-                            if (!yearId) {
-                                throw new Error(`No yearId mapping found for year ${year}`);
-                            }
+                            if (!yearId) throw new Error(`No yearId mapping found for year ${year}`);
 
                             await page.locator('xpath=//*[@id="selectYearMP"]').locator(`xpath=//*[@id='${yearId}']`).click({ force: true });
                             await page.getByRole('cell', { name: month, exact: true }).click();
@@ -120,7 +120,7 @@ async function processDivisions() {
             }
         }
 
-        await sendFilesToN8N(DOWNLOADS_PATH);
+        await sendFilesToN8N(DOWNLOADS_PATH, folderId); // ✅ Now passing folderId dynamically
     } catch (error) {
         console.error('❌ Unexpected error during processing:', error.message);
     } finally {
@@ -146,7 +146,7 @@ async function clearOldFiles(directory) {
     }
 }
 
-async function sendFilesToN8N(directory) {
+async function sendFilesToN8N(directory, folderId = '') {
     try {
         const files = await fs.readdir(directory);
         if (files.length === 0) {
@@ -166,7 +166,10 @@ async function sendFilesToN8N(directory) {
 
         formData.append('file_names', fileNames.join(','));
 
-        const response = await fetch(WEBHOOK_URL, {
+        // ✅ Construct webhook URL with folderId as query param
+        const webhookUrl = `https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1/MSL-Upload?folderId=${encodeURIComponent(folderId)}`;
+
+        const response = await fetch(webhookUrl, {
             method: 'POST',
             body: formData,
             headers: formData.getHeaders(),
