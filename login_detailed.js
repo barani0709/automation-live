@@ -164,15 +164,12 @@ async function sendFilesToN8N(directory, folderId = '') {
             fileNames.push(file);
         }
 
-        // ✅ Append metadata fields
         formData.append('file_names', fileNames.join(','));
-        formData.append('folderId', folderId); // ✅ send folderId as a form field
 
-        // ✅ Original working webhook URL (no /MSL-Upload, no query params)
-        const webhookUrl = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
+        // ✅ Pass folderId as query param (not body)
+        const webhookUrl = `https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1?folderId=${encodeURIComponent(folderId)}`;
 
-        // Optional: log the target
-        console.log(`📡 Sending to n8n webhook with folderId: ${folderId}`);
+        console.log(`📡 Sending to webhook with folderId param: ${folderId}`);
 
         const response = await fetch(webhookUrl, {
             method: 'POST',
