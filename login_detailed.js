@@ -1,41 +1,67 @@
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
 
-async function processDivisions(year,month) {
-    const downloadsPath = path.join('downloads');
-    await fs.mkdir(downloadsPath, { recursive: true });
+// Constants
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
+const DOWNLOADS_PATH = path.join('downloads');
 
-    const divisions = [
+// === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
+let input = {
+    months: ['Jan'],
+    startYear: 2025,
+    endYear: 2025,
+    yearIdMap: { 2025: 'y3' }
+};
+
+try {
+    if (process.env.INPUT_JSON) {
+        const parsed = JSON.parse(process.env.INPUT_JSON);
+        input = {
+            months: parsed.months || input.months,
+            startYear: parsed.startYear || input.startYear,
+            endYear: parsed.endYear || input.endYear,
+            yearIdMap: parsed.yearIdMap || input.yearIdMap
+        };
+        console.log('✅ Dynamic input loaded:', input);
+    } else {
+        console.log('⚠️ No INPUT_JSON found. Using default values.');
+    }
+} catch (error) {
+    console.error('❌ Failed to parse INPUT_JSON. Using defaults. Error:', error);
+}
+
+// Apply dynamic values
+const months = input.months;
+const startYear = input.startYear;
+const endYear = input.endYear;
+const yearIdMap = input.yearIdMap;
+
+// === Main Automation ===
+async function processDivisions() {
+    await clearOldFiles(DOWNLOADS_PATH);
+    await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
+
+    const divisions = [        
         'AP ELBRIT',
         'Delhi Elbrit',
         'Elbrit',
         'ELBRIT AURA PROXIMA',
+        'KE Aura N Proxima',
         'Elbrit CND',
         'KA Elbrit',
-        'KE Aura N Proxima',
         'Kerala Elbrit',
         'VASCO'
     ];
 
-    const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-
-    const startYear = 2025;
-    const endYear = 2025;
-
-    const yearIdMap = {
-        2025: 'y3',
-    };
-
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: true }); // ✅ Use headless for automation
     const context = await browser.newContext({ acceptDownloads: true });
 
     try {
         for (const division of divisions) {
-            console.log(`\nProcessing division: ${division}`);
+            console.log(`\n🚀 Processing division: ${division}`);
             const page = await context.newPage();
 
             try {
@@ -49,12 +75,10 @@ async function processDivisions(year,month) {
 
                 for (let year = startYear; year <= endYear; year++) {
                     for (const month of months) {
-                        console.log(`Processing ${month}-${year} for ${division}`);
-
+                        console.log(`🗓️  Processing ${month}-${year} for ${division}`);
                         try {
-                            // Navigate to MSL Detailed page
                             await page.goto('https://elbrit.ecubix.com/Apps/MSL/frmMSLDetail.aspx?a_id=341');
-                            await page.waitForLoadState('networkidle'); // Ensure the page has fully loaded
+                            await page.waitForLoadState('networkidle');
 
                             // Select Division
                             await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
@@ -63,41 +87,100 @@ async function processDivisions(year,month) {
                             // Select Month-Year
                             await page.locator('#ctl00_CPH_uclMonthSelect_imgOK').click();
                             await page.locator('#changeYearMP').click({ force: true });
+
                             const yearId = yearIdMap[year];
-                            await page.locator(`xpath=//*[@id="selectYearMP"]`).locator(`xpath=//*[@id='${yearId}']`).click({ force: true });
+                            if (!yearId) {
+                                throw new Error(`No yearId mapping found for year ${year}`);
+                            }
+
+                            await page.locator('xpath=//*[@id="selectYearMP"]').locator(`xpath=//*[@id='${yearId}']`).click({ force: true });
                             await page.getByRole('cell', { name: month, exact: true }).click();
 
                             // Download the report
-                            const downloadPromise = page.waitForEvent('download', { timeout: 60000 }); // Increased timeout
+                            const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
                             await page.getByRole('button', { name: 'Download' }).click();
                             const download = await downloadPromise;
 
                             const fileName = `MSL_Detailed_${division.replace(/\s+/g, '_')}_${month}-${year}.xlsx`;
-                            const filePath = path.join(downloadsPath, fileName);
+                            const filePath = path.join(DOWNLOADS_PATH, fileName);
                             await download.saveAs(filePath);
 
-                            console.log(`Downloaded and saved: ${fileName}`);
+                            console.log(`✅ Downloaded and saved: ${fileName}`);
                         } catch (error) {
-                            console.error(`Error processing ${month}-${year} for ${division}:`, error);
+                            console.error(`❌ Error processing ${month}-${year} for ${division}:`, error.message);
                         }
                     }
                 }
 
-                console.log(`Completed processing division: ${division}`);
+                console.log(`✅ Completed processing division: ${division}`);
             } catch (error) {
-                console.error(`Failed to process division ${division}:`, error);
+                console.error(`❌ Failed to process division ${division}:`, error.message);
             } finally {
                 await page.close();
             }
         }
+
+        await sendFilesToN8N(DOWNLOADS_PATH);
     } catch (error) {
-        console.error('An unexpected error occurred:', error);
+        console.error('❌ Unexpected error during processing:', error.message);
     } finally {
         await browser.close();
+        console.log('\n✅ All divisions processed and browser closed!');
     }
-
-    console.log(`\nAll divisions processed successfully!`);
 }
 
-// Run the function
+async function clearOldFiles(directory) {
+    try {
+        await fs.access(directory);
+        const files = await fs.readdir(directory);
+        for (const file of files) {
+            await fs.unlink(path.join(directory, file));
+        }
+        console.log('🧹 Old files deleted.');
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.log('📁 No old files found to delete.');
+        } else {
+            console.error('❌ Error clearing old files:', error.message);
+        }
+    }
+}
+
+async function sendFilesToN8N(directory) {
+    try {
+        const files = await fs.readdir(directory);
+        if (files.length === 0) {
+            console.log('📭 No files to send.');
+            return;
+        }
+
+        const formData = new FormData();
+        const fileNames = [];
+
+        for (const file of files) {
+            const filePath = path.join(directory, file);
+            const fileStream = await fs.readFile(filePath);
+            formData.append('files', fileStream, file);
+            fileNames.push(file);
+        }
+
+        formData.append('file_names', fileNames.join(','));
+
+        const response = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            body: formData,
+            headers: formData.getHeaders(),
+        });
+
+        if (response.ok) {
+            console.log('📤 Files successfully sent to n8n.');
+        } else {
+            console.error('❌ Failed to send files to n8n:', await response.text());
+        }
+    } catch (error) {
+        console.error('❌ Error sending files to n8n:', error.message);
+    }
+}
+
+// Start the automation
 processDivisions();
