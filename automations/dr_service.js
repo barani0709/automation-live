@@ -144,10 +144,12 @@ async function sendFilesToN8N(directory, folderId = '') {
       fileNames.push(file);
     }
 
-    formData.append('file_names', fileNames.join(','));
+    // ✅ Append each file name individually
+    for (const name of fileNames) {
+      formData.append('file_names', name);
+    }
 
     const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}`;
-
     const response = await fetch(webhookUrl, {
       method: 'POST',
       body: formData,
