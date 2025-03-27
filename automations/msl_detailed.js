@@ -20,7 +20,7 @@ let input = {
 
 try {
     if (process.env.INPUT_JSON) {
-        const parsed = JSON.parse(process.env.INPUT_JSON);
+        const parsed = process.env.INPUT_JSON;
         input = {
             months: parsed.months || input.months,
             startYear: parsed.startYear || input.startYear,

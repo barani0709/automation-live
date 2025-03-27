@@ -30,6 +30,6 @@ jobs:
 
       - name: 🚀 Run selected Playwright script
         env:
-          INPUT_JSON: ${{ toJson(github.event.inputs.input_json) }}
+          INPUT_JSON: ${{ github.event.inputs.input_json }}
         run: |
           node automations/${{ github.event.inputs.automation }}.js
