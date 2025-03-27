@@ -10,32 +10,38 @@ const WEBHOOK_BASE_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb
 
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
-    months: ['Jan'],
-    startYear: 2025,
-    endYear: 2025,
-    yearIdMap: { 2025: 'y3' },
-    folderId: '',
-    executionId: '' // ✅ new input
+  months: ['Jan'],
+  startYear: 2025,
+  endYear: 2025,
+  yearIdMap: { 2025: 'y3' },
+  folderId: '',
+  executionId: ''
 };
 
 try {
-    if (process.env.INPUT_JSON) {
-        const parsed = process.env.INPUT_JSON;
-        input = {
-            months: parsed.months || input.months,
-            startYear: parsed.startYear || input.startYear,
-            endYear: parsed.endYear || input.endYear,
-            yearIdMap: parsed.yearIdMap || input.yearIdMap,
-            folderId: parsed.folderId || input.folderId,
-            executionId: parsed.executionId || input.executionId
-        };
-        console.log('✅ Dynamic input loaded:', input);
-    } else {
-        console.log('⚠️ No INPUT_JSON found. Using default values.');
-    }
+  const rawInput = process.env.INPUT_JSON;
+
+  if (rawInput) {
+    const parsed =
+      typeof rawInput === 'string' ? JSON.parse(rawInput) : rawInput;
+
+    input = {
+      months: parsed.months || input.months,
+      startYear: parsed.startYear || input.startYear,
+      endYear: parsed.endYear || input.endYear,
+      yearIdMap: parsed.yearIdMap || input.yearIdMap,
+      folderId: parsed.folderId || input.folderId,
+      executionId: parsed.executionId || input.executionId
+    };
+
+    console.log('✅ Loaded input:', input);
+  } else {
+    console.log('⚠️ No INPUT_JSON provided. Using default values.');
+  }
 } catch (error) {
-    console.error('❌ Failed to parse INPUT_JSON. Using defaults. Error:', error);
+  console.error('❌ Failed to process INPUT_JSON:', error);
 }
+
 
 // Apply input values
 const { months, startYear, endYear, yearIdMap, folderId, executionId } = input;
