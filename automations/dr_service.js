@@ -4,11 +4,14 @@ import { promises as fs } from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
+
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
   months: ['Jan'],
   year: 2025,
-  folderId: ''
+  folderId: '',
+  executionId: ''
 };
 
 try {
@@ -17,7 +20,8 @@ try {
     input = {
       months: parsed.months || input.months,
       year: parsed.year || input.year,
-      folderId: parsed.folderId || input.folderId
+      folderId: parsed.folderId || input.folderId,
+      executionId: parsed.executionId || input.executionId
     };
     console.log('✅ Dynamic input loaded:', input);
   } else {
@@ -27,12 +31,8 @@ try {
   console.error('❌ Failed to parse INPUT_JSON. Using defaults. Error:', error);
 }
 
-const months = input.months;
-const targetYear = input.year;
-const folderId = input.folderId;
+const { months, year: targetYear, folderId, executionId } = input;
 const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
-
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
 async function processDivisions() {
   await fs.mkdir(downloadsPath, { recursive: true });
@@ -90,7 +90,7 @@ async function processDivisions() {
 
             // Division
             await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
-            await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and contains(@class, 'dxeListBoxItem') and text()='${division}']`).click();
+            await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
 
             // Download
             const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
@@ -116,7 +116,7 @@ async function processDivisions() {
     }
 
     // ✅ Send files to webhook
-    await sendFilesToN8N(downloadsPath, folderId);
+    await sendFilesToN8N(downloadsPath, folderId, executionId);
 
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
@@ -126,7 +126,7 @@ async function processDivisions() {
   }
 }
 
-async function sendFilesToN8N(directory, folderId = '') {
+async function sendFilesToN8N(directory, folderId = '', executionId = '') {
   try {
     const files = await fs.readdir(directory);
     if (files.length === 0) {
@@ -144,12 +144,12 @@ async function sendFilesToN8N(directory, folderId = '') {
       fileNames.push(file);
     }
 
-    // ✅ Append each file name individually
     for (const name of fileNames) {
       formData.append('file_names', name);
     }
 
-    const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}`;
+    const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}&executionId=${encodeURIComponent(executionId)}`;
+
     const response = await fetch(webhookUrl, {
       method: 'POST',
       body: formData,
