@@ -8,18 +8,13 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
 
 let input = {
-  divisionStateMap: {
-    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore'],
-    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
-    'Delhi Elbrit': ['Delhi', 'Punjab']
-  },
+  divisionStateMap: {},
   fromMonth: 'Mar',
   toMonth: 'Mar',
   year: 2025,
-  folderId: 'test-folder',
-  executionId: 'manual-run-001'
+  folderId: '',
+  executionId: ''
 };
-
 
 try {
   if (process.env.INPUT_JSON) {
@@ -43,20 +38,17 @@ async function processAllDivisions() {
   const page = await context.newPage();
 
   try {
-    // Step 1: Login and wait for dashboard
-    await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
-      waitUntil: 'domcontentloaded'
-    });
-
-    await page.fill('#txtUserName', 'E00134');
-    await page.fill('#txtPassword', 'Elbrit9999');
-    await page.click('#btnLogin');
+    // Login
+    await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx');
+    await page.locator('#txtUserName').fill('E00134');
+    await page.locator('#txtPassword').fill('Elbrit9999');
+    await page.locator('#btnLogin').click();
+    await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA', { timeout: 10000 }).click();
 
     try {
       const reminder = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
       await reminder.waitFor({ timeout: 5000 });
       await reminder.click();
-      console.log('ℹ️ Clicked "Remind Me Later" on subscription alert.');
     } catch {
       console.log('ℹ️ No subscription alert appeared.');
     }
@@ -64,7 +56,6 @@ async function processAllDivisions() {
     await page.waitForSelector('text=Master', { timeout: 10000 });
     console.log('✅ Login successful. Starting download automation...');
 
-    // Step 2: Loop through divisions and states
     for (const [division, states] of Object.entries(divisionStateMap)) {
       console.log(`\n🚀 Division: ${division}`);
 
@@ -100,26 +91,9 @@ async function processAllDivisions() {
         await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click();
 
         // Download report
-        let download;
-        try {
-          const downloadPromise = page.waitForEvent('download', { timeout: 300000 });
-          await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
-        
-          // Optionally wait for a brief moment to confirm a download starts or fails
-          download = await downloadPromise;
-        } catch (err) {
-          const alertMessage = await page.evaluate(() => {
-            const msg = document.querySelector('.dxeErrorCellSys, .dxpc-content')?.innerText;
-            return msg || null;
-          });
-        
-          console.warn(`⚠️ No download started for ${division} → ${state}.`);
-          if (alertMessage) {
-            console.warn(`📢 Message from page: ${alertMessage}`);
-          }
-        
-          continue; // Skip this state and move to next
-        }        
+        const downloadPromise = page.waitForEvent('download');
+        await page.locator('#ctl00_CPH_btnExport > img').click();
+        const download = await downloadPromise;
 
         const safeDivision = division.replace(/\s+/g, '_');
         const safeState = state.replace(/\s+/g, '_');

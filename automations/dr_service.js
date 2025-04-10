@@ -49,7 +49,7 @@ async function processDivisions() {
     'VASCO'
   ];
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {

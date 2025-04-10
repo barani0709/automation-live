@@ -1,0 +1,29 @@
+name: POB Daily Automation
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 9:30 AM IST
+    - cron: '0 6 * * *'   # 11:30 AM IST
+    - cron: '0 12 * * *'   # 5:30 PM IST
+
+jobs:
+  run-pob-daily:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 🧪 Install dependencies
+        run: |
+          npm install
+          npx playwright install
+
+      - name: 🚀 Run POB Daily Playwright Script
+        run: |
+          node automations/pob_daily_data.js
