@@ -49,7 +49,7 @@ async function processDivisions() {
 
   const { row, col, day, month, year } = getDatePickerPosition();
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
