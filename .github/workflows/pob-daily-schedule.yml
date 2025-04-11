@@ -27,4 +27,4 @@ jobs:
 
       - name: 🚀 Run POB Daily Playwright Script
         run: |
-          node automations/pob_daily_data.js
+          node automations/pob_automation.js
