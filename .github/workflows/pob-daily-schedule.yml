@@ -2,7 +2,10 @@ name: POB Daily Automation
 
 on:
   schedule:
-    - cron: '* * * * *'
+    - cron: '0 4 * * *'   # 9:30 AM IST
+    - cron: '0 6 * * *'   # 11:30 AM IST
+    - cron: '0 12 * * *'   # 5:30 PM IST
+    - cron: '15 12 * * *'   # 5:45 PM IST
 
 jobs:
   run-pob-daily:
@@ -24,4 +27,4 @@ jobs:
 
       - name: 🚀 Run POB Daily Playwright Script
         run: |
-          node automations/pob_automation.js
+          node automations/pob_daily_data.js
