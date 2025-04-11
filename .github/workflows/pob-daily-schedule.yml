@@ -2,7 +2,7 @@ name: POB Daily Automation
 
 on:
   schedule:
-    - cron: '* * * * *'  # Every 15 minutes
+    - cron: '0 7 * * *'  # Every 15 minutes
 
 jobs:
   run-pob-daily:
