@@ -63,7 +63,7 @@ async function process() {
 
   const { day, month, year, row, col } = getYesterdayInfo();
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
