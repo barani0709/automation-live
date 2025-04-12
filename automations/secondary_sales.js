@@ -110,7 +110,7 @@ async function processAllDivisions() {
         // Download report
         let download;
         try {
-          const downloadPromise = page.waitForEvent('download', { timeout: 300000 });
+          const downloadPromise = page.waitForEvent('download', { timeout: 3000000 });
           await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
           download = await downloadPromise;
         } catch (err) {
