@@ -8,18 +8,12 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
 
 let input = {
-  divisionStateMap: {
-    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore'],
-    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
-    'Delhi Elbrit': ['Delhi', 'Punjab']
-  },
   fromMonth: 'Mar',
   toMonth: 'Mar',
   year: 2025,
   folderId: 'test-folder',
   executionId: 'manual-run-001'
 };
-
 
 try {
   if (process.env.INPUT_JSON) {
@@ -33,17 +27,31 @@ try {
   console.error('❌ Failed to parse INPUT_JSON. Using defaults. Error:', error);
 }
 
-const { divisionStateMap, fromMonth, toMonth, year, folderId, executionId } = input;
+const { fromMonth, toMonth, year, folderId, executionId } = input;
 
 async function processAllDivisions() {
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
+  // ✅ Hardcoded division → state mapping
+  const divisionStateMap = {
+    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
+    'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
+    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
+    'Elbrit Bangalore': ['Karnataka'],
+    'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'Elbrit Mysore':['Karnataka'],
+    'KE Aura N Proxima': ['Kerala'],
+    'Kerala Elbrit': ['Kerala'],
+    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
+  };
+  
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 
   try {
-    // Step 1: Login and wait for dashboard
+    // Step 1: Login
     await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
       waitUntil: 'domcontentloaded'
     });
@@ -64,7 +72,7 @@ async function processAllDivisions() {
     await page.waitForSelector('text=Master', { timeout: 10000 });
     console.log('✅ Login successful. Starting download automation...');
 
-    // Step 2: Loop through divisions and states
+    // Step 2: Loop through hardcoded divisions and states
     for (const [division, states] of Object.entries(divisionStateMap)) {
       console.log(`\n🚀 Division: ${division}`);
 
@@ -104,22 +112,20 @@ async function processAllDivisions() {
         try {
           const downloadPromise = page.waitForEvent('download', { timeout: 300000 });
           await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
-        
-          // Optionally wait for a brief moment to confirm a download starts or fails
           download = await downloadPromise;
         } catch (err) {
           const alertMessage = await page.evaluate(() => {
             const msg = document.querySelector('.dxeErrorCellSys, .dxpc-content')?.innerText;
             return msg || null;
           });
-        
+
           console.warn(`⚠️ No download started for ${division} → ${state}.`);
           if (alertMessage) {
             console.warn(`📢 Message from page: ${alertMessage}`);
           }
-        
-          continue; // Skip this state and move to next
-        }        
+
+          continue;
+        }
 
         const safeDivision = division.replace(/\s+/g, '_');
         const safeState = state.replace(/\s+/g, '_');
