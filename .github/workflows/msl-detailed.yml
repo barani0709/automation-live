@@ -1,0 +1,31 @@
+name: Run MSL Detailed Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_json:
+        description: 'Input JSON string for MSL Detailed automation'
+        required: true
+
+jobs:
+  run-msl-detailed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 🧪 Install dependencies
+        run: |
+          npm install
+          npx playwright install
+
+      - name: 🚀 Run msl_detailed.js
+        env:
+          INPUT_JSON: ${{ github.event.inputs.input_json }}
+        run: node automations/msl_detailed.js
