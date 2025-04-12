@@ -2,8 +2,8 @@ name: POB Daily Automation
 
 on:
   schedule:
-    - cron: '30 7 * * *' 
-    - cron: '0 8 * * *'
+    - cron: '0 4 * * *' 
+    - cron: '0 5 * * *'
 
 jobs:
   run-pob-daily:
