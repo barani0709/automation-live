@@ -8,7 +8,7 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
 
 let input = {
-  fromMonth: 'Mar',
+  fromMonth: 'Jan',
   toMonth: 'Mar',
   year: 2025,
   folderId: 'test-folder',
@@ -110,7 +110,7 @@ async function processAllDivisions() {
         // Download report
         let download;
         try {
-          const downloadPromise = page.waitForEvent('download', { timeout: 3000000 });
+          const downloadPromise = page.waitForEvent('download', { timeout: 7000000 });
           await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
           download = await downloadPromise;
         } catch (err) {
