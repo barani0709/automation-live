@@ -11,7 +11,7 @@ let input = {
   fromMonth: 'Jan',
   toMonth: 'Mar',
   year: 2025,
-  folderId: 'test-folder',
+  folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
   executionId: 'manual-run-001'
 };
 
