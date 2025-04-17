@@ -9,7 +9,7 @@ const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
 
 let input = {
   fromMonth: 'Jan',
-  toMonth: 'Mar',
+  toMonth: 'Feb',
   year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
   executionId: 'manual-run-001'
@@ -62,14 +62,14 @@ async function processAllDivisions() {
 
     try {
       const reminder = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
-      await reminder.waitFor({ timeout: 5000 });
+      await reminder.waitFor({ timeout: 10000 });
       await reminder.click();
       console.log('ℹ️ Clicked "Remind Me Later" on subscription alert.');
     } catch {
       console.log('ℹ️ No subscription alert appeared.');
     }
 
-    await page.waitForSelector('text=Master', { timeout: 10000 });
+    await page.waitForSelector('text=Master', { timeout: 100000 });
     console.log('✅ Login successful. Starting download automation...');
 
     // Step 2: Loop through hardcoded divisions and states
@@ -110,23 +110,30 @@ async function processAllDivisions() {
         // Download report
         let download;
         try {
-          const downloadPromise = page.waitForEvent('download', { timeout: 7000000 });
+          const downloadPromise = page.waitForEvent('download', { timeout: 50000 });
           await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
           download = await downloadPromise;
         } catch (err) {
-          const alertMessage = await page.evaluate(() => {
-            const msg = document.querySelector('.dxeErrorCellSys, .dxpc-content')?.innerText;
-            return msg || null;
-          });
-
-          console.warn(`⚠️ No download started for ${division} → ${state}.`);
-          if (alertMessage) {
-            console.warn(`📢 Message from page: ${alertMessage}`);
+          console.warn(`⚠️ Download failed or not triggered for ${division} → ${state}.`);
+        
+          try {
+            const alertMessage = await page.evaluate(() => {
+              return (
+                document.querySelector('.dxeErrorCellSys')?.innerText ||
+                document.querySelector('.dxpc-content')?.innerText ||
+                null
+              );
+            });
+            if (alertMessage) {
+              console.warn(`📢 Page Message: ${alertMessage}`);
+            }
+          } catch (evalErr) {
+            console.warn('⚠️ Could not retrieve alert message from page.');
           }
-
-          continue;
+        
+          continue; // 🟢 Ensure it always skips to next state on failure
         }
-
+        
         const safeDivision = division.replace(/\s+/g, '_');
         const safeState = state.replace(/\s+/g, '_');
         const fileName = `StockistWise_${safeDivision}_${safeState}_${fromMonth}-${toMonth}-${year}.xlsx`;
