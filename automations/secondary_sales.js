@@ -12,7 +12,7 @@ let input = {
   toMonth: 'Feb',
   year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
-  executionId: 'manual-run-001'
+  executionId: 'uhGmhLcxRS1eoEZ8'
 };
 
 try {

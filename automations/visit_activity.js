@@ -7,24 +7,27 @@ import FormData from 'form-data';
 const DOWNLOADS_PATH = path.join('visit_data');
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
-// === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
+// === Step 1: Define Inputs (Fixed execution and folder IDs) ===
 let input = {
-  months: ['Jan'],
+  fromMonth: 'Jan',
+  toMonth: 'Jan',
   year: 2025,
-  folderId: '',
-  executionId: ''
+  folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
+  executionId: 'NmhU6IfHuGgx8oX1'
 };
 
 try {
   if (process.env.INPUT_JSON) {
     const parsed = JSON.parse(process.env.INPUT_JSON);
     input = {
-      months: parsed.months || input.months,
+      fromMonth: parsed.fromMonth || input.fromMonth,
+      toMonth: parsed.toMonth || input.toMonth,
       year: parsed.year || input.year,
-      folderId: parsed.folderId || input.folderId,
-      executionId: parsed.executionId || input.executionId
+      // Ignore dynamic folderId and executionId to keep them fixed
+      folderId: input.folderId,
+      executionId: input.executionId
     };
-    console.log('✅ Dynamic input loaded:', input);
+    console.log('✅ Dynamic input loaded (with fixed IDs):', input);
   } else {
     console.log('⚠️ No INPUT_JSON found. Using default values.');
   }
@@ -32,17 +35,28 @@ try {
   console.error('❌ Failed to parse INPUT_JSON:', error);
 }
 
-const { months, year, folderId, executionId } = input;
+const { fromMonth, toMonth, year, folderId, executionId } = input;
+
+const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fromIndex = allMonths.indexOf(fromMonth);
+const toIndex = allMonths.indexOf(toMonth);
+const selectedMonths = allMonths.slice(fromIndex, toIndex + 1);
 
 async function processDivisions() {
-  await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
+  try {
+    await fs.rm(DOWNLOADS_PATH, { recursive: true, force: true });
+    await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
+    console.log(`🧹 Cleared previous downloads at ${DOWNLOADS_PATH}`);
+  } catch (err) {
+    console.error('❌ Error clearing downloads folder:', err.message);
+  }
 
   const divisions = [
     'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
-    'KE Aura N Proxima', 'Elbrit CND', 'KA Elbrit', 'Kerala Elbrit', 'VASCO'
+    'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore','Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
   ];
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
@@ -51,7 +65,6 @@ async function processDivisions() {
       const page = await context.newPage();
 
       try {
-        // Login
         await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
           timeout: 60000,
           waitUntil: 'domcontentloaded'
@@ -62,7 +75,7 @@ async function processDivisions() {
         await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').waitFor({ state: 'visible', timeout: 10000 });
         await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').click();
 
-        for (const month of months) {
+        for (const month of selectedMonths) {
           console.log(`🗓️ ${month}-${year} for ${division}`);
           try {
             await page.goto('https://elbrit.ecubix.com/Apps/Report/frmDownloadDrDetails.aspx?a_id=376', {
@@ -82,25 +95,21 @@ async function processDivisions() {
             await page.locator('//*[@id="y3"]').click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
-            // Division
             await page.locator('#ctl00_CPH_ddlDivision_B-1').click();
             await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
 
-            // Check all 6 designations
             for (let i = 0; i <= 5; i++) {
               await page.locator(`#ctl00_CPH_chkDesignation_${i}`).check();
             }
 
-            // Visit Count & Dates
             await page.locator('#ctl00_CPH_chkVisit').check();
             await page.locator('#ctl00_CPH_chkVisitDates').check();
 
-            // Download
             const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
             await page.locator('#ctl00_CPH_imgExcel').click();
             const download = await downloadPromise;
 
-            const fileName = `Visit_Activity_${division.replace(/\s+/g, '_')}_${month}-${year}.xlsx`;
+            const fileName = `Visit_Activity_${division.replace(/\s+/g, '_')}_${month}-${year}.csv`;
             const filePath = path.join(DOWNLOADS_PATH, fileName);
             await download.saveAs(filePath);
 
