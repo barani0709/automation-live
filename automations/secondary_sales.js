@@ -8,8 +8,8 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
 
 let input = {
-  fromMonth: 'Jan',
-  toMonth: 'Feb',
+  fromMonth: 'Apr',
+  toMonth: 'Apr',
   year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
   executionId: 'uhGmhLcxRS1eoEZ8'
@@ -93,14 +93,20 @@ async function processAllDivisions() {
 
         // From Month
         await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
+        await page.waitForTimeout(1000);  // wait for calendar popup
         await page.locator('#changeYearMP').click();
-        await page.locator('#y3').click(); // 'y3' assumed for 2025
+        await page.waitForTimeout(500);   // wait for year picker
+        await page.locator('#y3').click(); // 2025
+        await page.waitForTimeout(500);
         await page.getByText(fromMonth, { exact: true }).click();
 
         // To Month
         await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
+        await page.waitForTimeout(1000);
         await page.locator('#changeYearMP').click();
+        await page.waitForTimeout(500);
         await page.locator('#y3').click();
+        await page.waitForTimeout(500);
         await page.getByText(toMonth, { exact: true }).click();
 
         // Select Layout → "Automation"

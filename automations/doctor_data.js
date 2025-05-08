@@ -8,8 +8,8 @@ import unzipper from 'unzipper';
 
 const DOWNLOADS_PATH = path.join('msl_summary_data');
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
-const folderId = '01XYZABC123FOLDERIDVALUE';
-const executionId = 'abcDEFghIJK123EXEID';
+const folderId = '01VW6POPNNYBG5P2YJZJEJWXHVXI3AHN6Z';
+const executionId = 'rKDtnKHkUnf3CuSm';
 
 async function runMSLSummaryAutomation() {
   // === Step 0: Clean the folder before starting ===
@@ -18,7 +18,7 @@ async function runMSLSummaryAutomation() {
   // Create folder if not exists
   await fsPromises.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   let zipPath = '';
@@ -63,8 +63,8 @@ async function runMSLSummaryAutomation() {
     }
 
     // === Step 4: Download ZIP ===
-    const downloadPromise = page.waitForEvent('download');
-    await page.locator('#ctl00_CPH_btnDownloadDivision').click();
+    const downloadPromise = page.waitForEvent('download', { timeout: 120000 });
+    await page.locator('#ctl00_CPH_btnDownloadDivision').click({ timeout: 120000 });
     const download = await downloadPromise;
 
     zipPath = path.join(DOWNLOADS_PATH, 'msl_summary.zip');
