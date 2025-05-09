@@ -56,7 +56,7 @@ async function processDivisions() {
     'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore','Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
   ];
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
