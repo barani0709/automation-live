@@ -38,15 +38,8 @@ async function processDivisions() {
   await fs.mkdir(downloadsPath, { recursive: true });
 
   const divisions = [
-    'AP ELBRIT',
-    'Delhi Elbrit',
-    'Elbrit',
-    'ELBRIT AURA PROXIMA',
-    'KE Aura N Proxima',
-    'Elbrit CND',
-    'KA Elbrit',
-    'Kerala Elbrit',
-    'VASCO'
+    'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
+    'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore','Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
   ];
 
   const browser = await chromium.launch({ headless: true });
