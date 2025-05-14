@@ -4,11 +4,16 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-import { BlockBlobClient } from '@azure/storage-blob';
+import {
+  BlobServiceClient,
+  StorageSharedKeyCredential
+} from '@azure/storage-blob';
+
+const AZURE_STORAGE_ACCOUNT = 'elbrit';
+const AZURE_STORAGE_KEY = 'ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==';
+const AZURE_CONTAINER_NAME = 'secondary-reports';
 
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
-const AZURE_CONTAINER_SAS_URL = 'https://elbrit.blob.core.windows.net/?sv=2024-11-04&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-05-13T19:46:56Z&st=2025-05-13T11:46:56Z&spr=https&sig=L4BR81jEaJCxI45lneXsCamG0u9s2a23%2F3zma8Sy%2BMQ%3D';
-const SAS_TOKEN = 'sv=2024-11-04&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-05-13T19:46:56Z&st=2025-05-13T11:46:56Z&spr=https&sig=L4BR81jEaJCxI45lneXsCamG0u9s2a23%2F3zma8Sy%2BMQ%3D';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
@@ -40,16 +45,20 @@ async function getYearIdFromPopup(page, desiredYear) {
   return `#y${offset}`;
 }
 
-async function uploadToAzureBlob(directory) {
+async function uploadToAzureBlob(directory, year, month) {
+  const sharedKeyCredential = new StorageSharedKeyCredential(
+    AZURE_STORAGE_ACCOUNT,
+    AZURE_STORAGE_KEY
+  );
+  const blobServiceClient = new BlobServiceClient(
+    `https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
+    sharedKeyCredential
+  );
+  const containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER_NAME);
+
   const files = await fs.readdir(directory);
   if (!files.length) {
     console.log('📭 No files to upload.');
-    return;
-  }
-
-  const [baseUrl, sasToken] = AZURE_CONTAINER_SAS_URL.split('?');
-  if (!sasToken) {
-    console.error('❌ Invalid SAS URL: no query string found');
     return;
   }
 
@@ -61,13 +70,12 @@ async function uploadToAzureBlob(directory) {
     }
 
     const [, safeDivision, safeState, monthTag, yearTag] = match;
-    const virtualPath = `${yearTag}/${monthTag}/${file}`;
-    const fullBlobUrl = `https://elbrit.blob.core.windows.net/secondary-reports/${encodeURIComponent(virtualPath)}?${SAS_TOKEN}`;
-    const blobClient = new BlockBlobClient(fullBlobUrl);
+    const blobPath = `${yearTag}/${monthTag}/${file}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
     try {
       const buffer = await fs.readFile(path.join(directory, file));
-      await blobClient.uploadData(buffer, {
+      await blockBlobClient.uploadData(buffer, {
         tags: {
           division: safeDivision.replace(/_/g, ' '),
           state: safeState.replace(/_/g, ' '),
@@ -75,7 +83,7 @@ async function uploadToAzureBlob(directory) {
           year: yearTag
         }
       });
-      console.log(`📤 Uploaded to Azure: ${file}`);
+      console.log(`📤 Uploaded to Azure: ${blobPath}`);
     } catch (err) {
       console.error(`❌ Failed to upload ${file}:`, err.message);
     }
@@ -185,7 +193,7 @@ async function processAllDivisions() {
       }
     }
 
-    await uploadToAzureBlob(DOWNLOADS_PATH);
+    await uploadToAzureBlob(DOWNLOADS_PATH, year, fromMonth);
     await uploadToWebhook(DOWNLOADS_PATH, folderId, executionId);
 
   } catch (error) {
