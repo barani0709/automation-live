@@ -9,7 +9,7 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
   months: ['Jan'],
-  year: 2025,
+  year: 2024,
   folderId: '',
   executionId: ''
 };
@@ -34,6 +34,13 @@ try {
 const { months, year: targetYear, folderId, executionId } = input;
 const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
 
+async function getYearIdFromPopup(page, desiredYear) {
+  const y0Text = await page.locator('#y0').textContent();
+  const baseYear = parseInt(y0Text?.trim());
+  const offset = desiredYear - baseYear;
+  return `#y${offset}`;
+}
+
 async function processDivisions() {
   await fs.mkdir(downloadsPath, { recursive: true });
 
@@ -42,7 +49,7 @@ async function processDivisions() {
     'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore','Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
   ];
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
@@ -69,16 +76,18 @@ async function processDivisions() {
               waitUntil: 'domcontentloaded'
             });
 
-            // From month-year
+            // FROM MONTH
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
-            await page.locator('#changeYearMP').click({ force: true });
-            await page.locator('//*[@id="y3"]').click({ force: true });
+            await page.locator('#changeYearMP').click();
+            const fromYearId = await getYearIdFromPopup(page, targetYear);
+            await page.locator(fromYearId).click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
-            // To month-year
+            // TO MONTH
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
-            await page.locator('#changeYearMP').click({ force: true });
-            await page.locator('//*[@id="y3"]').click({ force: true });
+            await page.locator('#changeYearMP').click();
+            const toYearId = await getYearIdFromPopup(page, targetYear);
+            await page.locator(toYearId).click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
             // Division

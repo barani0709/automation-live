@@ -1,16 +1,20 @@
+// Required packages
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { BlockBlobClient } from '@azure/storage-blob';
 
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
-const DOWNLOADS_PATH = path.join('stockist_wise_sales_data');
+const AZURE_CONTAINER_SAS_URL = 'https://elbrit.blob.core.windows.net/?sv=2024-11-04&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-05-13T19:46:56Z&st=2025-05-13T11:46:56Z&spr=https&sig=L4BR81jEaJCxI45lneXsCamG0u9s2a23%2F3zma8Sy%2BMQ%3D';
+const SAS_TOKEN = 'sv=2024-11-04&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2027-05-13T19:46:56Z&st=2025-05-13T11:46:56Z&spr=https&sig=L4BR81jEaJCxI45lneXsCamG0u9s2a23%2F3zma8Sy%2BMQ%3D';
+const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
-  fromMonth: 'Dec',
-  toMonth: 'Dec',
-  year: 2024,
+  fromMonth: 'Jan',
+  toMonth: 'Jan',
+  year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
   executionId: 'uhGmhLcxRS1eoEZ8'
 };
@@ -36,138 +40,45 @@ async function getYearIdFromPopup(page, desiredYear) {
   return `#y${offset}`;
 }
 
-async function processAllDivisions() {
-  await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
+async function uploadToAzureBlob(directory) {
+  const files = await fs.readdir(directory);
+  if (!files.length) {
+    console.log('📭 No files to upload.');
+    return;
+  }
 
-  // ✅ Hardcoded division → state mapping
-  const divisionStateMap = {
-    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
-    'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
-    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
-    'Elbrit Bangalore': ['Karnataka'],
-    'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    'Elbrit Mysore':['Karnataka'],
-    'KE Aura N Proxima': ['Kerala'],
-    'Kerala Elbrit': ['Kerala'],
-    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
-  };
-  
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ acceptDownloads: true });
-  const page = await context.newPage();
+  const [baseUrl, sasToken] = AZURE_CONTAINER_SAS_URL.split('?');
+  if (!sasToken) {
+    console.error('❌ Invalid SAS URL: no query string found');
+    return;
+  }
 
-  try {
-    // Step 1: Login
-    await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
-      waitUntil: 'domcontentloaded'
-    });
+  for (const file of files) {
+    const match = file.match(/^StockistWise_(.+)_(.+)_(\w+)-\w+-(\d{4})\.xlsx$/);
+    if (!match) {
+      console.warn(`⚠️ Skipping unrecognized file format: ${file}`);
+      continue;
+    }
 
-    await page.fill('#txtUserName', 'E00134');
-    await page.fill('#txtPassword', 'Elbrit9999');
-    await page.click('#btnLogin');
+    const [, safeDivision, safeState, monthTag, yearTag] = match;
+    const virtualPath = `${yearTag}/${monthTag}/${file}`;
+    const fullBlobUrl = `https://elbrit.blob.core.windows.net/secondary-reports/${encodeURIComponent(virtualPath)}?${SAS_TOKEN}`;
+    const blobClient = new BlockBlobClient(fullBlobUrl);
 
     try {
-      const reminder = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
-      await reminder.waitFor({ timeout: 10000 });
-      await reminder.click();
-      console.log('ℹ️ Clicked "Remind Me Later" on subscription alert.');
-    } catch {
-      console.log('ℹ️ No subscription alert appeared.');
-    }
-
-    await page.waitForSelector('text=Master', { timeout: 100000 });
-    console.log('✅ Login successful. Starting download automation...');
-
-    // Step 2: Loop through hardcoded divisions and states
-    for (const [division, states] of Object.entries(divisionStateMap)) {
-      console.log(`\n🚀 Division: ${division}`);
-
-      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379', {
-        waitUntil: 'domcontentloaded'
-      });
-
-      // Select Division
-      await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
-      await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
-
-      for (const state of states) {
-        console.log(`🌐 State: ${state}`);
-
-        // Select State
-        await page.locator('#ctl00_CPH_ddlRegion_B-1Img').click();
-        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlRegion_DDD_L_LBI') and text()='${state}']`).click();
-
-        // === FROM MONTH ===
-        await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
-        await page.waitForTimeout(1000);
-        await page.locator('#changeYearMP').click();
-        await page.waitForTimeout(500);
-        const fromYearId = await getYearIdFromPopup(page, year);
-        await page.locator(fromYearId).click({ force: true });
-        await page.waitForTimeout(500);
-        await page.getByText(fromMonth, { exact: true }).click();
-
-        // === TO MONTH ===
-        await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
-        await page.waitForTimeout(1000);
-        await page.locator('#changeYearMP').click();
-        await page.waitForTimeout(500);
-        const toYearId = await getYearIdFromPopup(page, year);
-        await page.locator(toYearId).click({ force: true });
-        await page.waitForTimeout(500);
-        await page.getByText(toMonth, { exact: true }).click();
-
-
-        // Select Layout → "Automation"
-        await page.locator('#ctl00_CPH_rptLayout_ddlLayout_B-1Img').click();
-        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click();
-
-        // Download report
-        let download;
-        try {
-          const downloadPromise = page.waitForEvent('download', { timeout: 50000 });
-          await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
-          download = await downloadPromise;
-        } catch (err) {
-          console.warn(`⚠️ Download failed or not triggered for ${division} → ${state}.`);
-        
-          try {
-            const alertMessage = await page.evaluate(() => {
-              return (
-                document.querySelector('.dxeErrorCellSys')?.innerText ||
-                document.querySelector('.dxpc-content')?.innerText ||
-                null
-              );
-            });
-            if (alertMessage) {
-              console.warn(`📢 Page Message: ${alertMessage}`);
-            }
-          } catch (evalErr) {
-            console.warn('⚠️ Could not retrieve alert message from page.');
-          }
-        
-          continue; // 🟢 Ensure it always skips to next state on failure
+      const buffer = await fs.readFile(path.join(directory, file));
+      await blobClient.uploadData(buffer, {
+        tags: {
+          division: safeDivision.replace(/_/g, ' '),
+          state: safeState.replace(/_/g, ' '),
+          month: monthTag.toLowerCase(),
+          year: yearTag
         }
-        
-        const safeDivision = division.replace(/\s+/g, '_');
-        const safeState = state.replace(/\s+/g, '_');
-        const fileName = `StockistWise_${safeDivision}_${safeState}_${fromMonth}-${toMonth}-${year}.xlsx`;
-        const filePath = path.join(DOWNLOADS_PATH, fileName);
-
-        await download.saveAs(filePath);
-        console.log(`📥 Downloaded: ${fileName}`);
-      }
+      });
+      console.log(`📤 Uploaded to Azure: ${file}`);
+    } catch (err) {
+      console.error(`❌ Failed to upload ${file}:`, err.message);
     }
-
-    await uploadToWebhook(DOWNLOADS_PATH, folderId, executionId);
-
-  } catch (error) {
-    console.error('❌ Unexpected automation error:', error.message);
-  } finally {
-    await context.close();
-    await browser.close();
-    console.log('✅ All divisions processed. Browser closed.');
   }
 }
 
@@ -195,6 +106,94 @@ async function uploadToWebhook(directory, folderId, executionId) {
 
   } catch (err) {
     console.error('❌ Upload error:', err.message);
+  }
+}
+
+async function processAllDivisions() {
+  await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
+
+  const divisionStateMap = {
+    'AP ELBRIT': ['Andhra Pradesh']
+  };
+
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext({ acceptDownloads: true });
+  const page = await context.newPage();
+
+  try {
+    await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', { waitUntil: 'domcontentloaded' });
+    await page.fill('#txtUserName', 'E00134');
+    await page.fill('#txtPassword', 'Elbrit9999');
+    await page.click('#btnLogin');
+
+    try {
+      const reminder = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
+      await reminder.waitFor({ timeout: 10000 });
+      await reminder.click();
+    } catch {}
+
+    await page.waitForSelector('text=Master', { timeout: 100000 });
+    console.log('✅ Login successful. Starting download automation...');
+
+    for (const [division, states] of Object.entries(divisionStateMap)) {
+      console.log(`\n🚀 Division: ${division}`);
+      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379', { waitUntil: 'domcontentloaded' });
+      await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
+      await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
+
+      for (const state of states) {
+        console.log(`🌐 State: ${state}`);
+        await page.locator('#ctl00_CPH_ddlRegion_B-1Img').click();
+        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlRegion_DDD_L_LBI') and text()='${state}']`).click();
+
+        await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
+        await page.waitForTimeout(1000);
+        await page.locator('#changeYearMP').click();
+        const fromYearId = await getYearIdFromPopup(page, year);
+        await page.locator(fromYearId).click({ force: true });
+        await page.waitForTimeout(500);
+        await page.getByText(fromMonth, { exact: true }).click();
+
+        await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
+        await page.waitForTimeout(1000);
+        await page.locator('#changeYearMP').click();
+        const toYearId = await getYearIdFromPopup(page, year);
+        await page.locator(toYearId).click({ force: true });
+        await page.waitForTimeout(500);
+        await page.getByText(toMonth, { exact: true }).click();
+
+        await page.locator('#ctl00_CPH_rptLayout_ddlLayout_B-1Img').click();
+        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click();
+
+        let download;
+        try {
+          const downloadPromise = page.waitForEvent('download', { timeout: 50000 });
+          await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
+          download = await downloadPromise;
+        } catch (err) {
+          console.warn(`⚠️ Download failed or not triggered for ${division} → ${state}.`);
+          continue;
+        }
+
+        const safeDivision = division.replace(/\s+/g, '_');
+        const safeState = state.replace(/\s+/g, '_');
+        const fileName = `StockistWise_${safeDivision}_${safeState}_${fromMonth}-${toMonth}-${year}.xlsx`;
+        const filePath = path.join(DOWNLOADS_PATH, fileName);
+
+        await download.saveAs(filePath);
+        console.log(`📥 Downloaded: ${fileName}`);
+      }
+    }
+
+    await uploadToAzureBlob(DOWNLOADS_PATH);
+    await uploadToWebhook(DOWNLOADS_PATH, folderId, executionId);
+
+  } catch (error) {
+    console.error('❌ Unexpected automation error:', error.message);
+  } finally {
+    await context.close();
+    await browser.close();
+    console.log('✅ All divisions processed. Browser closed.');
   }
 }
 

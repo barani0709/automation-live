@@ -37,6 +37,13 @@ try {
 
 const { fromMonth, toMonth, year, folderId, executionId } = input;
 
+async function getYearIdFromPopup(page, desiredYear) {
+  const y0Text = await page.locator('#y0').textContent();
+  const baseYear = parseInt(y0Text?.trim());
+  const offset = desiredYear - baseYear;
+  return `#y${offset}`;
+}
+
 const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fromIndex = allMonths.indexOf(fromMonth);
 const toIndex = allMonths.indexOf(toMonth);
@@ -86,13 +93,15 @@ async function processDivisions() {
             // FROM Month-Year
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
             await page.locator('#changeYearMP').click({ force: true });
-            await page.locator('//*[@id="y3"]').click({ force: true });
+            const YearId = await getYearIdFromPopup(page, year);
+            await page.locator(YearId).click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
             // TO Month-Year
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
             await page.locator('#changeYearMP').click({ force: true });
-            await page.locator('//*[@id="y3"]').click({ force: true });
+            const Year = await getYearIdFromPopup(page, year);
+            await page.locator(Year).click({ force: true });
             await page.getByText(month, { exact: true }).click();
 
             await page.locator('#ctl00_CPH_ddlDivision_B-1').click();
