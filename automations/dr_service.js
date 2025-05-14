@@ -6,7 +6,6 @@ import FormData from 'form-data';
 
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
-// === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
   months: ['Mar'],
   year: 2025,
@@ -58,15 +57,16 @@ async function processDivisions() {
       const page = await context.newPage();
 
       try {
-        await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', {
-          timeout: 60000,
-          waitUntil: 'domcontentloaded'
-        });
+        await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', { timeout: 60000, waitUntil: 'domcontentloaded' });
         await page.locator('#txtUserName').fill('E00134');
         await page.locator('#txtPassword').fill('Elbrit9999');
         await page.locator('#btnLogin').click();
-        await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').waitFor({ state: 'visible', timeout: 10000 });
-        await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').click();
+
+        // Wait for and dismiss popup
+        const remindButton = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
+        if (await remindButton.isVisible({ timeout: 10000 })) {
+          await remindButton.click();
+        }
 
         for (const month of months) {
           console.log(`🗓️  Processing ${month}-${targetYear} for ${division}`);
@@ -78,26 +78,40 @@ async function processDivisions() {
 
             // FROM MONTH
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click();
             const fromYearId = await getYearIdFromPopup(page, targetYear);
             await page.locator(fromYearId).click({ force: true });
-            await page.getByText(month, { exact: true }).click();
+
+            const fromMonth = page.getByText(month, { exact: true });
+            await fromMonth.waitFor({ state: 'visible', timeout: 10000 });
+            await fromMonth.scrollIntoViewIfNeeded();
+            await fromMonth.click({ force: true });
 
             // TO MONTH
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click();
             const toYearId = await getYearIdFromPopup(page, targetYear);
             await page.locator(toYearId).click({ force: true });
-            await page.getByText(month, { exact: true }).click();
 
-            // Division
-            // Division dropdown open + click
+            const toMonth = page.getByText(month, { exact: true });
+            await toMonth.waitFor({ state: 'visible', timeout: 10000 });
+            await toMonth.scrollIntoViewIfNeeded();
+            await toMonth.click({ force: true });
+
+            // Division dropdown open
             await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
-            await page.waitForTimeout(500); // ensure panel is rendering
-            await page.waitForSelector('#ctl00_CPH_ddlDivision_DDD_L_LBT', { timeout: 5000 });
+            await page.waitForTimeout(500);
+            const divisionPanelVisible = await page.locator('#ctl00_CPH_ddlDivision_DDD_L_LBT').isVisible();
+            if (!divisionPanelVisible) {
+              await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
+              await page.waitForTimeout(1000);
+            }
 
             const divisionOption = page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`);
             await divisionOption.waitFor({ state: 'visible', timeout: 10000 });
+            await divisionOption.scrollIntoViewIfNeeded();
             await divisionOption.click();
 
             // Download
@@ -108,9 +122,9 @@ async function processDivisions() {
             const fileName = `All_Dr_Service_${division.replace(/\s+/g, '_')}_${month}-${targetYear}.xlsx`;
             const filePath = path.join(downloadsPath, fileName);
             await download.saveAs(filePath);
-
             console.log(`✅ Downloaded: ${fileName}`);
           } catch (error) {
+            await page.screenshot({ path: `error_${division.replace(/\s+/g, '_')}_${month}.png`, fullPage: true });
             console.error(`❌ Error processing ${month}-${targetYear} for ${division}:`, error.message);
           }
         }
@@ -123,7 +137,7 @@ async function processDivisions() {
       }
     }
 
-    // ✅ Send files to webhook
+    // Send files to n8n
     await sendFilesToN8N(downloadsPath, folderId, executionId);
 
   } catch (error) {
@@ -143,17 +157,11 @@ async function sendFilesToN8N(directory, folderId = '', executionId = '') {
     }
 
     const formData = new FormData();
-    const fileNames = [];
-
     for (const file of files) {
       const filePath = path.join(directory, file);
       const fileStream = await fs.readFile(filePath);
       formData.append('files', fileStream, file);
-      fileNames.push(file);
-    }
-
-    for (const name of fileNames) {
-      formData.append('file_names', name);
+      formData.append('file_names', file);
     }
 
     const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}&executionId=${encodeURIComponent(executionId)}`;
