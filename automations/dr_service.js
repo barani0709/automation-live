@@ -91,8 +91,14 @@ async function processDivisions() {
             await page.getByText(month, { exact: true }).click();
 
             // Division
+            // Division dropdown open + click
             await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
-            await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
+            await page.waitForTimeout(500); // ensure panel is rendering
+            await page.waitForSelector('#ctl00_CPH_ddlDivision_DDD_L_LBT', { timeout: 5000 });
+
+            const divisionOption = page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`);
+            await divisionOption.waitFor({ state: 'visible', timeout: 10000 });
+            await divisionOption.click();
 
             // Download
             const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
