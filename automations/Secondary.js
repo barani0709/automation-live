@@ -4,14 +4,18 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { config } from 'dotenv';
 import {
   BlobServiceClient,
   StorageSharedKeyCredential
 } from '@azure/storage-blob';
 
-const AZURE_STORAGE_ACCOUNT = 'elbrit';
-const AZURE_STORAGE_KEY = 'ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==';
-const AZURE_CONTAINER_NAME = 'secondary-reports';
+// Load environment variables
+config();
+
+const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
+const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
+const AZURE_CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
 
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
