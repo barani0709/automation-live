@@ -78,16 +78,22 @@ async function processDivisions() {
 
             // FROM MONTH
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click();
+            await page.waitForTimeout(500);
             const fromYearId = await getYearIdFromPopup(page, targetYear);
             await page.locator(fromYearId).click({ force: true });
+            await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
             // TO MONTH
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click();
+            await page.waitForTimeout(500);
             const toYearId = await getYearIdFromPopup(page, targetYear);
             await page.locator(toYearId).click({ force: true });
+            await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
             // Division
