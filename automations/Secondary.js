@@ -17,12 +17,12 @@ const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
 const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const AZURE_CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
 
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
-  fromMonth: 'Jan',
-  toMonth: 'Jan',
+  fromMonth: 'Feb',
+  toMonth: 'Apr',
   year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
   executionId: 'uhGmhLcxRS1eoEZ8'
@@ -67,24 +67,30 @@ async function uploadToAzureBlob(directory, year, month) {
   }
 
   for (const file of files) {
-    const match = file.match(/^StockistWise_(.+)_(.+)_(\w+)-\w+-(\d{4})\.xlsx$/);
+    const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
     if (!match) {
       console.warn(`⚠️ Skipping unrecognized file format: ${file}`);
       continue;
     }
 
-    const [, safeDivision, safeState, monthTag, yearTag] = match;
-    const blobPath = `${yearTag}/${monthTag}/${file}`;
+    const [, divisionRaw, stateRaw, monthRaw, yearRaw] = match;
+
+    const division = divisionRaw.replace(/_/g, ' ');
+    const state = stateRaw.replace(/_/g, ' ');
+    const month = monthRaw.toLowerCase();
+    const year = yearRaw;
+
+    const blobPath = `${year}/${month}/${file}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
 
     try {
       const buffer = await fs.readFile(path.join(directory, file));
       await blockBlobClient.uploadData(buffer, {
         tags: {
-          division: safeDivision.replace(/_/g, ' '),
-          state: safeState.replace(/_/g, ' '),
-          month: monthTag.toLowerCase(),
-          year: yearTag
+          division,
+          state,
+          month,
+          year
         }
       });
       console.log(`📤 Uploaded to Azure: ${blobPath}`);
@@ -125,7 +131,16 @@ async function processAllDivisions() {
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
   const divisionStateMap = {
-    'AP ELBRIT': ['Andhra Pradesh']
+    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
+    'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
+    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
+    'Elbrit Bangalore': ['Karnataka'],
+    'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'Elbrit Mysore':['Karnataka'],
+    'KE Aura N Proxima': ['Kerala'],
+    'Kerala Elbrit': ['Kerala'],
+    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
   };
 
   const browser = await chromium.launch({ headless: false });
@@ -187,9 +202,10 @@ async function processAllDivisions() {
           continue;
         }
 
-        const safeDivision = division.replace(/\s+/g, '_');
-        const safeState = state.replace(/\s+/g, '_');
-        const fileName = `StockistWise_${safeDivision}_${safeState}_${fromMonth}-${toMonth}-${year}.xlsx`;
+        const fileName = `Secondary_${division}_${state}_${fromMonth}_${year}.xlsx`;
+        // const safeDivision = division.replace(/\s+/g, '_');
+        // const safeState = state.replace(/\s+/g, '_');
+        // const fileName = `Secondary_${safeDivision}_${safeState}_${fromMonth}_${year}.xlsx`;
         const filePath = path.join(DOWNLOADS_PATH, fileName);
 
         await download.saveAs(filePath);

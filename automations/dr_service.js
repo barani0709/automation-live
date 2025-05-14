@@ -8,8 +8,8 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 
 // === Step 1: Accept Dynamic Inputs via INPUT_JSON ===
 let input = {
-  months: ['Jan'],
-  year: 2024,
+  months: ['Mar'],
+  year: 2025,
   folderId: '',
   executionId: ''
 };
