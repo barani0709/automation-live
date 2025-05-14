@@ -10,8 +10,8 @@ const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9
 let input = {
   months: ['Mar'],
   year: 2025,
-  folderId: '',
-  executionId: ''
+  folderId: '01VW6POPOITICIOXSNB5G2DRKL3DTWOP4D',
+  executionId: 'lY8fRCBl9WAPzTjf'
 };
 
 try {
@@ -49,7 +49,7 @@ async function processDivisions() {
     'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore','Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
   ];
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
