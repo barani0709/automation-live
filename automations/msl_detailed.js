@@ -86,12 +86,15 @@ async function processDivisions() {
 
                             // Select Month-Year
                             await page.locator('#ctl00_CPH_uclMonthSelect_imgOK').click();
+                            await page.waitForTimeout(500);
                             await page.locator('#changeYearMP').click({ force: true });
 
                             const yearId = yearIdMap[year];
                             if (!yearId) throw new Error(`No yearId mapping found for year ${year}`);
+                            await page.waitForTimeout(500);
 
                             await page.locator(`xpath=//*[@id='${yearId}']`).click({ force: true });
+                            await page.waitForTimeout(500);
                             await page.getByRole('cell', { name: month, exact: true }).click();
 
                             // Download the report
