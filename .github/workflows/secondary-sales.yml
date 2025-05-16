@@ -36,6 +36,9 @@ jobs:
         run: |
           npm install
           npx playwright install
+          npm install node-fetch
+          npm install -D @playwright/test
+
 
   run-script:
     needs: install-deps
