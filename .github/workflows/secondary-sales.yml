@@ -30,19 +30,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install dependencies
         run: |
-          npm install
+          npm ci
           npx playwright install
-
-      - name: Upload node_modules
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-modules
-          path: |
-            node_modules/
-            package-lock.json
-            package.json
 
   run-script:
     needs: install-deps
@@ -56,11 +56,14 @@ jobs:
         with:
           node-version: 18
 
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
         with:
-          name: node-modules
-          path: .
+          path: |
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Run secondary_sales.js
         env:
