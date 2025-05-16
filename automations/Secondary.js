@@ -9,6 +9,10 @@ import {
   BlobServiceClient,
   StorageSharedKeyCredential
 } from '@azure/storage-blob';
+import {
+  TableClient,
+  AzureNamedKeyCredential
+} from '@azure/data-tables';
 
 // Load environment variables
 config();
@@ -16,12 +20,13 @@ config();
 const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
 const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const AZURE_CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
+const AZURE_TABLE_NAME = 'secondary';
 
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
-  fromMonth: 'Feb',
+  fromMonth: 'Apr',
   toMonth: 'Apr',
   year: 2025,
   folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
@@ -49,7 +54,7 @@ async function getYearIdFromPopup(page, desiredYear) {
   return `#y${offset}`;
 }
 
-async function uploadToAzureBlob(directory, year, month) {
+async function uploadToAzureBlobAndTable(directory, year, month) {
   const sharedKeyCredential = new StorageSharedKeyCredential(
     AZURE_STORAGE_ACCOUNT,
     AZURE_STORAGE_KEY
@@ -60,42 +65,61 @@ async function uploadToAzureBlob(directory, year, month) {
   );
   const containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER_NAME);
 
-  const files = await fs.readdir(directory);
-  if (!files.length) {
-    console.log('📭 No files to upload.');
-    return;
+  const tableClient = new TableClient(
+    `https://${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`,
+    AZURE_TABLE_NAME,
+    new AzureNamedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY)
+  );
+
+  try {
+    await tableClient.createTable();
+    console.log('✅ Verified Azure Table exists.');
+  } catch (err) {
+    if (err.statusCode !== 409) {
+      console.error('❌ Table verification failed:', err.message);
+      return;
+    }
   }
 
+  const files = await fs.readdir(directory);
+  if (!files.length) return console.log('📭 No files to upload.');
+
   for (const file of files) {
-    const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
-    if (!match) {
-      console.warn(`⚠️ Skipping unrecognized file format: ${file}`);
-      continue;
-    }
-
-    const [, divisionRaw, stateRaw, monthRaw, yearRaw] = match;
-
-    const division = divisionRaw.replace(/_/g, ' ');
-    const state = stateRaw.replace(/_/g, ' ');
-    const month = monthRaw.toLowerCase();
-    const year = yearRaw;
-
-    const blobPath = `${year}/${month}/${file}`;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-
     try {
+      const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
+      if (!match) {
+        console.warn(`⚠️ Skipping unrecognized file format: ${file}`);
+        continue;
+      }
+
+      const [, divisionRaw, stateRaw, monthRaw, yearRaw] = match;
+      const division = divisionRaw;
+      const state = stateRaw;
+      const month = monthRaw.toLowerCase();
+      const blobPath = `${yearRaw}/${month}/${file}`;
+      const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+
       const buffer = await fs.readFile(path.join(directory, file));
       await blockBlobClient.uploadData(buffer, {
-        tags: {
-          division,
-          state,
-          month,
-          year
-        }
+        tags: { division, state, month, year }
       });
-      console.log(`📤 Uploaded to Azure: ${blobPath}`);
+
+      console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
+
+      const blobUrl = blockBlobClient.url;
+      await tableClient.createEntity({
+        partitionKey: `${yearRaw}-${month}`,
+        rowKey: `${division}-${state}`,
+        fileUrl: blobUrl,
+        division:`${division}`,
+        state:`${state}`,
+        month:`${month}`,
+        year:`${year}`
+      });
+
+      console.log(`📝 Logged metadata to Table: ${division}-${state}`);
     } catch (err) {
-      console.error(`❌ Failed to upload ${file}:`, err.message);
+      console.error(`❌ Upload/Table entry failed for ${file}:`, err.message);
     }
   }
 }
@@ -137,7 +161,7 @@ async function processAllDivisions() {
     'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
     'Elbrit Bangalore': ['Karnataka'],
     'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    'Elbrit Mysore':['Karnataka'],
+    'Elbrit Mysore': ['Karnataka'],
     'KE Aura N Proxima': ['Kerala'],
     'Kerala Elbrit': ['Kerala'],
     'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
@@ -203,17 +227,13 @@ async function processAllDivisions() {
         }
 
         const fileName = `Secondary_${division}_${state}_${fromMonth}_${year}.xlsx`;
-        // const safeDivision = division.replace(/\s+/g, '_');
-        // const safeState = state.replace(/\s+/g, '_');
-        // const fileName = `Secondary_${safeDivision}_${safeState}_${fromMonth}_${year}.xlsx`;
         const filePath = path.join(DOWNLOADS_PATH, fileName);
-
         await download.saveAs(filePath);
         console.log(`📥 Downloaded: ${fileName}`);
       }
     }
 
-    await uploadToAzureBlob(DOWNLOADS_PATH, year, fromMonth);
+    await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
     await uploadToWebhook(DOWNLOADS_PATH, folderId, executionId);
 
   } catch (error) {
