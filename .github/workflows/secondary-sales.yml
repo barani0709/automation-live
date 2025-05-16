@@ -65,7 +65,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: Install Playwright browsers
+        run: npx playwright install
+
       - name: Run secondary_sales.js
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
         run: node automations/secondary_sales.js
+
