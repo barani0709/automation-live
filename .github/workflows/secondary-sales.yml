@@ -10,8 +10,6 @@ on:
 jobs:
   checkout:
     runs-on: ubuntu-latest
-    outputs:
-      node-setup: ${{ steps.set-node.outputs.node-setup }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -20,7 +18,7 @@ jobs:
     needs: checkout
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout again
+      - name: Checkout code
         uses: actions/checkout@v3
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -31,19 +29,21 @@ jobs:
     needs: setup-node
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout again
+      - name: Checkout code
         uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           npm install
           npm install -D @playwright/test
+          npm install node-fetch@3
+          npm install form-data
           npx playwright install
 
   run-script:
     needs: install-deps
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout again
+      - name: Checkout code
         uses: actions/checkout@v3
       - name: Run secondary_sales.js
         env:
