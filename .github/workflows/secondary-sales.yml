@@ -10,19 +10,16 @@ on:
 jobs:
   checkout:
     runs-on: ubuntu-latest
-    outputs:
-      repo-path: ${{ steps.set-output.outputs.repo-path }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - id: set-output
-        run: echo "repo-path=${{ github.workspace }}" >> $GITHUB_OUTPUT
 
   setup-node:
     needs: checkout
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 18
 
@@ -31,21 +28,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Needed again to access repo contents
+        uses: actions/checkout@v3
+
       - name: Install dependencies
         run: |
-          npm install -D @playwright/test
           npm install
           npx playwright install
-          npm install node-fetch
 
+      - name: Upload node_modules
+        uses: actions/upload-artifact@v3
+        with:
+          name: node-modules
+          path: |
+            node_modules/
+            package-lock.json
+            package.json
 
   run-script:
     needs: install-deps
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Needed again for final run
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Download node_modules
+        uses: actions/download-artifact@v3
+        with:
+          name: node-modules
+          path: .
+
       - name: Run secondary_sales.js
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
