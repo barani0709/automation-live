@@ -10,8 +10,11 @@ on:
 jobs:
   checkout:
     runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.checkout.outputs.commit }}
     steps:
       - name: Checkout code
+        id: checkout
         uses: actions/checkout@v3
 
   setup-node:
@@ -30,16 +33,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Cache node_modules
+        id: cache-node
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install dependencies
+      - name: Cache Playwright browsers
+        id: cache-browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-browsers
+
+      - name: Install dependencies and browsers
         run: |
           npm ci
           npx playwright install
@@ -56,20 +71,21 @@ jobs:
         with:
           node-version: 18
 
-      - name: Restore node_modules cache
+      - name: Restore node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
+          path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Install Playwright browsers
-        run: npx playwright install
+      - name: Restore Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-browsers
 
       - name: Run secondary_sales.js
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
         run: node automations/secondary_sales.js
-
