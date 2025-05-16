@@ -1,4 +1,4 @@
-const { chromium } = require('@playwright/test');
+import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
 import fetch from 'node-fetch';

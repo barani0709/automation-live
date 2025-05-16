@@ -10,18 +10,19 @@ on:
 jobs:
   checkout:
     runs-on: ubuntu-latest
+    outputs:
+      repo-path: ${{ steps.set-output.outputs.repo-path }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - id: set-output
+        run: echo "repo-path=${{ github.workspace }}" >> $GITHUB_OUTPUT
 
   setup-node:
     needs: checkout
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
 
@@ -30,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Needed again to access repo contents
       - name: Install dependencies
         run: |
           npm install
@@ -41,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Needed again for final run
       - name: Run secondary_sales.js
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
