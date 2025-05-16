@@ -1,9 +1,7 @@
-// Required packages
+// secondary-sales-azure.js
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
 import { config } from 'dotenv';
 import {
   BlobServiceClient,
@@ -13,145 +11,91 @@ import {
   TableClient,
   AzureNamedKeyCredential
 } from '@azure/data-tables';
+import {
+  getYearIdFromPopup,
+  clearOldFiles,
+  loginToEcubix
+} from './ecubix-utils.js';
 
-// Load environment variables
 config();
 
 const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
 const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
-const AZURE_CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
+const AZURE_CONTAINER_NAME = 'secondary-reports';
 const AZURE_TABLE_NAME = 'secondary';
-
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
-  fromMonth: 'Apr',
-  toMonth: 'Apr',
+  fromMonth: 'Mar',
+  toMonth: 'Mar',
   year: 2025,
-  folderId: '01VW6POPKOZ4GMMSVER5HIQ3DDCWMZDDTC',
-  executionId: 'uhGmhLcxRS1eoEZ8'
+  folderId: '',
+  executionId: ''
 };
 
 try {
   if (process.env.INPUT_JSON) {
     const parsed = JSON.parse(process.env.INPUT_JSON);
     input = { ...input, ...parsed };
-    console.log('✅ Loaded dynamic input:\n', JSON.stringify(input, null, 2));
+    console.log('✅ Loaded dynamic input:', input);
   } else {
     console.log('⚠️ No INPUT_JSON found. Using default values.');
   }
-} catch (error) {
-  console.error('❌ Failed to parse INPUT_JSON. Using defaults. Error:', error);
+} catch (err) {
+  console.error('❌ Failed to parse INPUT_JSON:', err);
 }
 
-const { fromMonth, toMonth, year, folderId, executionId } = input;
-
-async function getYearIdFromPopup(page, desiredYear) {
-  const y0Text = await page.locator('#y0').textContent();
-  const baseYear = parseInt(y0Text?.trim());
-  const offset = desiredYear - baseYear;
-  return `#y${offset}`;
-}
+const { fromMonth, toMonth, year } = input;
 
 async function uploadToAzureBlobAndTable(directory, year, month) {
-  const sharedKeyCredential = new StorageSharedKeyCredential(
-    AZURE_STORAGE_ACCOUNT,
-    AZURE_STORAGE_KEY
-  );
-  const blobServiceClient = new BlobServiceClient(
-    `https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
-    sharedKeyCredential
-  );
-  const containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER_NAME);
+  const sharedKey = new StorageSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY);
+  const blobClient = new BlobServiceClient(`https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`, sharedKey);
+  const containerClient = blobClient.getContainerClient(AZURE_CONTAINER_NAME);
+  await containerClient.createIfNotExists();
 
-  const tableClient = new TableClient(
-    `https://${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`,
-    AZURE_TABLE_NAME,
-    new AzureNamedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY)
-  );
+  const tableClient = new TableClient(`https://${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`, AZURE_TABLE_NAME, new AzureNamedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY));
 
   try {
     await tableClient.createTable();
-    console.log('✅ Verified Azure Table exists.');
   } catch (err) {
-    if (err.statusCode !== 409) {
-      console.error('❌ Table verification failed:', err.message);
-      return;
-    }
+    if (err.statusCode !== 409) throw err;
   }
 
   const files = await fs.readdir(directory);
-  if (!files.length) return console.log('📭 No files to upload.');
 
   for (const file of files) {
-    try {
-      const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
-      if (!match) {
-        console.warn(`⚠️ Skipping unrecognized file format: ${file}`);
-        continue;
-      }
-
-      const [, divisionRaw, stateRaw, monthRaw, yearRaw] = match;
-      const division = divisionRaw;
-      const state = stateRaw;
-      const month = monthRaw.toLowerCase();
-      const blobPath = `${yearRaw}/${month}/${file}`;
-      const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
-
-      const buffer = await fs.readFile(path.join(directory, file));
-      await blockBlobClient.uploadData(buffer, {
-        tags: { division, state, month, year }
-      });
-
-      console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
-
-      const blobUrl = blockBlobClient.url;
-      await tableClient.createEntity({
-        partitionKey: `${yearRaw}-${month}`,
-        rowKey: `${division}-${state}`,
-        fileUrl: blobUrl,
-        division:`${division}`,
-        state:`${state}`,
-        month:`${month}`,
-        year:`${year}`
-      });
-
-      console.log(`📝 Logged metadata to Table: ${division}-${state}`);
-    } catch (err) {
-      console.error(`❌ Upload/Table entry failed for ${file}:`, err.message);
-    }
-  }
-}
-
-async function uploadToWebhook(directory, folderId, executionId) {
-  try {
-    const files = await fs.readdir(directory);
-    if (!files.length) return console.log('📭 No files to upload.');
-
-    const formData = new FormData();
-    for (const file of files) {
-      const stream = await fs.readFile(path.join(directory, file));
-      formData.append('files', stream, file);
-      formData.append('file_names', file);
+    const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
+    if (!match) {
+      console.warn(`⚠️ Skipping invalid file: ${file}`);
+      continue;
     }
 
-    const webhookUrl = `${WEBHOOK_URL}?folderId=${encodeURIComponent(folderId)}&executionId=${encodeURIComponent(executionId)}`;
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      body: formData,
-      headers: formData.getHeaders()
+    const [, division, state, monthRaw, yearRaw] = match;
+    const month = monthRaw.toLowerCase();
+    const blobPath = `${yearRaw}/${month}/${file}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+    const buffer = await fs.readFile(path.join(directory, file));
+
+    await blockBlobClient.uploadData(buffer, {
+      tags: { division, state, month, year }
     });
+    console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
-    if (response.ok) console.log('📤 Files uploaded to webhook successfully.');
-    else console.error('❌ Webhook upload failed:', await response.text());
-
-  } catch (err) {
-    console.error('❌ Upload error:', err.message);
+    await tableClient.createEntity({
+      partitionKey: `${yearRaw}-${month}`,
+      rowKey: `${division}-${state}`,
+      fileUrl: blockBlobClient.url,
+      division,
+      state,
+      month,
+      year
+    });
+    console.log(`📝 Logged metadata for: ${division}-${state}`);
   }
 }
 
 async function processAllDivisions() {
+  await clearOldFiles(downloadsPath);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
   const divisionStateMap = {
@@ -172,23 +116,11 @@ async function processAllDivisions() {
   const page = await context.newPage();
 
   try {
-    await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx', { waitUntil: 'domcontentloaded' });
-    await page.fill('#txtUserName', 'E00134');
-    await page.fill('#txtPassword', 'Elbrit9999');
-    await page.click('#btnLogin');
-
-    try {
-      const reminder = page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA');
-      await reminder.waitFor({ timeout: 10000 });
-      await reminder.click();
-    } catch {}
-
-    await page.waitForSelector('text=Master', { timeout: 100000 });
-    console.log('✅ Login successful. Starting download automation...');
+    await loginToEcubix(page);
 
     for (const [division, states] of Object.entries(divisionStateMap)) {
-      console.log(`\n🚀 Division: ${division}`);
-      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379', { waitUntil: 'domcontentloaded' });
+      console.log(`\n🚀 Processing Division: ${division}`);
+      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379');
       await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
       await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
 
@@ -216,32 +148,31 @@ async function processAllDivisions() {
         await page.locator('#ctl00_CPH_rptLayout_ddlLayout_B-1Img').click();
         await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click();
 
-        let download;
         try {
           const downloadPromise = page.waitForEvent('download', { timeout: 50000 });
-          await page.locator('//*[@id="ctl00_CPH_btnExport"]/img').click();
-          download = await downloadPromise;
-        } catch (err) {
-          console.warn(`⚠️ Download failed or not triggered for ${division} → ${state}.`);
-          continue;
-        }
+          await page.locator('#ctl00_CPH_btnExport img').click();
+          const download = await downloadPromise;
 
-        const fileName = `Secondary_${division}_${state}_${fromMonth}_${year}.xlsx`;
-        const filePath = path.join(DOWNLOADS_PATH, fileName);
-        await download.saveAs(filePath);
-        console.log(`📥 Downloaded: ${fileName}`);
+          const safeDivision = division.replace(/\s+/g, '_');
+          const safeState = state.replace(/\s+/g, '_');
+          const fileName = `Secondary_${safeDivision}_${safeState}_${fromMonth}_${year}.xlsx`;
+          const filePath = path.join(DOWNLOADS_PATH, fileName);
+          await download.saveAs(filePath);
+          console.log(`📥 Downloaded: ${fileName}`);
+        } catch (err) {
+          console.warn(`⚠️ Failed to download for ${division} → ${state}:`, err.message);
+        }
       }
     }
 
     await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
-    await uploadToWebhook(DOWNLOADS_PATH, folderId, executionId);
 
-  } catch (error) {
-    console.error('❌ Unexpected automation error:', error.message);
+  } catch (err) {
+    console.error('❌ Automation error:', err.message);
   } finally {
     await context.close();
     await browser.close();
-    console.log('✅ All divisions processed. Browser closed.');
+    console.log('✅ Finished all divisions');
   }
 }
 

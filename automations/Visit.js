@@ -2,20 +2,33 @@
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { config } from 'dotenv';
+import {
+  BlobServiceClient,
+  StorageSharedKeyCredential
+} from '@azure/storage-blob';
+import {
+  TableClient,
+  AzureNamedKeyCredential
+} from '@azure/data-tables';
 import {
   getYearIdFromPopup,
   loginToEcubix,
-  clearOldFiles,
-  sendFilesToN8N
+  clearOldFiles
 } from './ecubix-utils.js';
 
+config();
+
+const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
+const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
+const CONTAINER_NAME = 'visit';
+const TABLE_NAME = 'visit';
 const DOWNLOADS_PATH = path.join('visit_data');
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
 let input = {
-  fromMonth: 'Jan',
-  toMonth: 'Jan',
-  year: 2025,
+  fromMonth: 'Dec',
+  toMonth: 'Dec',
+  year: 2024,
   folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
   executionId: 'NmhU6IfHuGgx8oX1'
 };
@@ -38,7 +51,7 @@ try {
   console.error('❌ Failed to parse INPUT_JSON:', error);
 }
 
-const { fromMonth, toMonth, year, folderId, executionId } = input;
+const { fromMonth, toMonth, year } = input;
 const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const selectedMonths = allMonths.slice(allMonths.indexOf(fromMonth), allMonths.indexOf(toMonth) + 1);
 
@@ -46,6 +59,57 @@ const divisions = [
   'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
   'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
+
+async function uploadToAzureBlobAndTable(directory, year, month) {
+  const sharedKey = new StorageSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY);
+  const blobClient = new BlobServiceClient(`https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`, sharedKey);
+  const containerClient = blobClient.getContainerClient(CONTAINER_NAME);
+  await containerClient.createIfNotExists();
+
+  const tableClient = new TableClient(
+    `https://${AZURE_STORAGE_ACCOUNT}.table.core.windows.net`,
+    TABLE_NAME,
+    new AzureNamedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY)
+  );
+
+  try {
+    await tableClient.createTable();
+  } catch (err) {
+    if (err.statusCode !== 409) throw err;
+  }
+
+  const files = await fs.readdir(directory);
+
+  for (const file of files) {
+    const match = file.match(/^Visit_Activity_(.+?)_(\w+)-(\d{4})\.csv$/);
+    if (!match) {
+      console.warn(`⚠️ Skipping invalid file: ${file}`);
+      continue;
+    }
+
+    const [, divisionRaw, monthRaw, yearRaw] = match;
+    const division = divisionRaw;
+    const month = monthRaw.toLowerCase();
+    const blobPath = `${yearRaw}/${month}/${file}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+    const buffer = await fs.readFile(path.join(directory, file));
+
+    await blockBlobClient.uploadData(buffer, {
+      tags: { division, month, year }
+    });
+    console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
+
+    await tableClient.createEntity({
+      partitionKey: `${yearRaw}-${month}`,
+      rowKey: `${division}`,
+      fileUrl: blockBlobClient.url,
+      division,
+      month,
+      year
+    });
+    console.log(`📝 Logged metadata for: ${division}`);
+  }
+}
 
 async function processDivisions() {
   await clearOldFiles(DOWNLOADS_PATH);
@@ -71,25 +135,27 @@ async function processDivisions() {
               waitUntil: 'domcontentloaded'
             });
 
-            // FROM Month-Year
             await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click({ force: true });
+            await page.waitForTimeout(500);
             const fromYearId = await getYearIdFromPopup(page, year);
             await page.locator(fromYearId).click({ force: true });
+            await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
-            // TO Month-Year
             await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
+            await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click({ force: true });
+            await page.waitForTimeout(500);
             const toYearId = await getYearIdFromPopup(page, year);
             await page.locator(toYearId).click({ force: true });
+            await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
-            // Select Division
             await page.locator('#ctl00_CPH_ddlDivision_B-1').click();
             await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
 
-            // Check Designations and Options
             for (let i = 0; i <= 5; i++) {
               await page.locator(`#ctl00_CPH_chkDesignation_${i}`).check();
             }
@@ -101,7 +167,7 @@ async function processDivisions() {
             await page.locator('#ctl00_CPH_imgExcel').click();
             const download = await downloadPromise;
 
-            const fileName = `Visit_Activity_${division.replace(/\s+/g, '_')}_${month}-${year}.csv`;
+            const fileName = `Visit_Activity_${division}_${month}-${year}.csv`;
             const filePath = path.join(DOWNLOADS_PATH, fileName);
             await download.saveAs(filePath);
 
@@ -119,7 +185,8 @@ async function processDivisions() {
       }
     }
 
-    await sendFilesToN8N(DOWNLOADS_PATH, WEBHOOK_URL, folderId, executionId);
+    await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
+
   } catch (error) {
     console.error('❌ Automation error:', error.message);
   } finally {
