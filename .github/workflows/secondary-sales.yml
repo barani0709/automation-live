@@ -34,10 +34,10 @@ jobs:
         uses: actions/checkout@v3  # Needed again to access repo contents
       - name: Install dependencies
         run: |
+          npm install -D @playwright/test
           npm install
           npx playwright install
           npm install node-fetch
-          npm install -D @playwright/test
 
 
   run-script:
