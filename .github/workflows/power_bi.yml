@@ -1,0 +1,27 @@
+name: Power BI Auto Refresh
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # ⏰ Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  run-refresh-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm install
+          npx playwright install
+
+      - name: 🚀 Run Power BI Refresh script
+        run: node automations/PowerBi.js
