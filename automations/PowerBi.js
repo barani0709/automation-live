@@ -21,14 +21,28 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.fill('input[type="password"]', PASSWORD);
     await page.click('input[type="submit"]');
 
+  try {
+    const staySignedInBtn = page.locator('input[id="idBtn_Back"]');
+    await staySignedInBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(1000);
+    await staySignedInBtn.click();
+    console.log("⏭️ Skipped 'Stay signed in'");
+  } catch (e) {
+    console.warn("⚠️ 'Stay signed in' prompt not immediately visible, retrying...");
     try {
-      await page.waitForSelector('input[id="idBtn_Back"]', { timeout: 5000 });
-      await page.waitForTimeout(1000);
-      await page.click('input[id="idBtn_Back"]');
-      console.log("⏭️ Skipped 'Stay signed in'");
+      await page.waitForTimeout(3000);
+      const retryBtn = page.locator('input[id="idBtn_Back"]');
+      if (await retryBtn.isVisible()) {
+        await retryBtn.click();
+        console.log("⏭️ Skipped 'Stay signed in' (after retry)");
+      } else {
+        console.log("✅ No 'Stay signed in' prompt (confirmed)");
+      }
     } catch {
-      console.log("✅ No 'Stay signed in' prompt");
+      console.log("✅ No 'Stay signed in' prompt (fallback)");
     }
+  }
+
 
     // Wait for and click workspace switcher
     const switcherButton = page.locator('xpath=//*[@id="leftNavPane"]/div/div/tri-workspace-switcher/tri-navbar-label-item/button');
