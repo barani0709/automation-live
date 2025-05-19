@@ -21,7 +21,7 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.waitForTimeout(3000); // Wait for password screen
 
     await page.fill('input[type="password"]', PASSWORD);
-    await page.click('#submitBtn');
+    await page.click('input[type="submit"]');
 
     // 3. Handle 'Stay signed in?' screen
     try {
