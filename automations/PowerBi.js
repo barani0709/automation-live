@@ -20,6 +20,7 @@ const PASSWORD = 'F^983194242330ac12A';       // 🔐 Replace with your actual p
 
     try {
       await page.waitForSelector('input[id="idBtn_Back"]', { timeout: 5000 });
+      await page.waitForTimeout(1000);
       await page.click('input[id="idBtn_Back"]');
       console.log("⏭️ Skipped 'Stay signed in'");
     } catch {
@@ -27,15 +28,18 @@ const PASSWORD = 'F^983194242330ac12A';       // 🔐 Replace with your actual p
     }
 
     const switcherButton = await page.locator('xpath=//*[@id="leftNavPane"]/div/div/tri-workspace-switcher/tri-navbar-label-item/button', { timeout: 10000 });
+    await page.waitForTimeout(1000);
     await switcherButton.click();
     console.log("✅ Clicked workspace switcher");
 
     const workspaceButton = await page.locator('xpath=//*[@id="cdk-overlay-2"]/tri-workspace-flyout/div[1]/cdk-virtual-scroll-viewport/div[1]/tri-workspace-button[2]/button', { timeout: 10000 });
+    await page.waitForTimeout(500);
     await workspaceButton.click();
     console.log("✅ Navigated to specific workspace");
 
     const reportRowSelector = 'xpath=//*[@id="artifactContentView"]/div[1]/div[12]/div[2]/div/span';
     await page.waitForSelector(reportRowSelector, { timeout: 10000 });
+    await page.waitForTimeout(500);
     await page.hover(reportRowSelector);
     await page.waitForTimeout(1000);
 
