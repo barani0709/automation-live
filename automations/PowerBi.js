@@ -16,12 +16,12 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.goto('https://app.powerbi.com');
 
     // 2. Login flow
-    await page.fill('input[type="email"]', EMAIL);
-    await page.click('input[type="submit"]');
+    await page.fill('#email', EMAIL);
+    await page.click('#submitBtn');
     await page.waitForTimeout(3000); // Wait for password screen
 
     await page.fill('input[type="password"]', PASSWORD);
-    await page.click('input[type="submit"]');
+    await page.click('#submitBtn');
 
     // 3. Handle 'Stay signed in?' screen
     try {
