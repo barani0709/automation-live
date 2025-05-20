@@ -40,7 +40,7 @@ const ERROR_DIR = 'error';
       await page.locator('xpath=//*[@id="KmsiCheckboxField"]').check();
       const staySignedInBtn = page.locator('xpath=//*[@id="idBtn_Back"]');
       await staySignedInBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(600);
+      await page.waitForTimeout(1000);
       await staySignedInBtn.click();
       console.log("⏭️ Skipped 'Stay signed in'");
     } catch {
@@ -49,13 +49,12 @@ const ERROR_DIR = 'error';
     await page.screenshot({ path: `${ERROR_DIR}/step-5-stay-signed-in.png`, fullPage: true });
 
     await page.goto('https://app.powerbi.com/home?experience=power-bi', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(5000);
     console.log('✅ Navigated to Power BI Home');
     await page.screenshot({ path: `${ERROR_DIR}/step-6-navigated-to-home.png`, fullPage: true });
 
-    await page.waitForFunction(() => {
-      return window.location.href.includes('/home?experience=power-bi');
-    }, {}, { timeout: 20000 });
-    console.log('🧭 Fully redirected to Power BI Home');
+    await page.waitForSelector('#leftNavPane', { timeout: 30000 });
+    console.log('🧭 Confirmed: Power BI Home dashboard loaded');
 
     await page.waitForSelector('#leftNavPane', { timeout: 15000 });
     console.log('✅ Dashboard UI is visible');
