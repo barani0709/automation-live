@@ -58,9 +58,13 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.goto('https://app.powerbi.com/home?experience=power-bi', { waitUntil: 'domcontentloaded' });
     console.log('✅ Navigated to Power BI Home');
 
-    // ✅ Wait for final landing page to load
-    await page.waitForFunction(() => window.location.href === 'https://app.powerbi.com/', {}, { timeout: 20000 });
+    // Wait until redirected to any valid Power BI page
+    await page.waitForFunction(() => window.location.href.includes('app.powerbi.com'), {}, { timeout: 20000 });
     console.log('🧭 Final Redirect Complete:', page.url());
+
+    // Optional: wait until the nav is visible
+    await page.waitForSelector('#leftNavPane', { timeout: 10000 });
+
 
 
     // 7. Debug screenshot and URL
