@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import fs from 'fs';
 
 const EMAIL = 'integrations@elbrit.org';
 const PASSWORD = 'F^983194242330ac12A';
@@ -53,23 +54,32 @@ const PASSWORD = 'F^983194242330ac12A';
       }
     }
 
-    // Debug screenshot and URL before workspace check
+    // 5. If login did not redirect properly
+    if (page.url().includes('login.microsoftonline.com')) {
+      throw new Error('❌ Login failed — still on Microsoft login page');
+    }
+
+    // 6. Force navigation to Power BI Home
+    await page.goto('https://app.powerbi.com/home?experience=power-bi', { waitUntil: 'domcontentloaded' });
+    console.log('✅ Navigated to Power BI Home');
+
+    // 7. Debug screenshot and URL
     await page.screenshot({ path: 'before_workspace_click.png', fullPage: true });
     console.log('🧭 Current URL:', page.url());
 
-    // 5. Click workspace switcher
+    // 8. Click workspace switcher
     const switcherButton = page.locator('xpath=//*[@id="leftNavPane"]/div/div/tri-workspace-switcher/tri-navbar-label-item/button');
     await switcherButton.waitFor({ state: 'visible', timeout: 15000 });
     await switcherButton.click();
     console.log("✅ Clicked workspace switcher");
 
-    // 6. Select specific workspace (2nd in list)
+    // 9. Select specific workspace (2nd in list)
     const workspaceButton = page.locator('xpath=//*[@id="cdk-overlay-2"]/tri-workspace-flyout/div[1]/cdk-virtual-scroll-viewport/div[1]/tri-workspace-button[2]/button');
     await workspaceButton.waitFor({ state: 'visible', timeout: 10000 });
     await workspaceButton.click();
     console.log("✅ Navigated to specific workspace");
 
-    // 7. Refresh first report
+    // 10. Refresh first report
     const reportRowSelector1 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[12]/div[2]/div/span';
     await page.waitForSelector(reportRowSelector1, { timeout: 10000 });
     await page.waitForTimeout(500);
@@ -81,7 +91,7 @@ const PASSWORD = 'F^983194242330ac12A';
     await refreshButton1.click({ force: true });
     await page.waitForTimeout(500);
 
-    // 8. Refresh second report
+    // 11. Refresh second report
     const reportRowSelector2 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[8]/div[2]/div/span';
     await page.waitForSelector(reportRowSelector2, { timeout: 10000 });
     await page.waitForTimeout(500);
@@ -97,6 +107,11 @@ const PASSWORD = 'F^983194242330ac12A';
 
   } catch (error) {
     console.error('❌ Error during automation:', error);
+
+    // Save page source for debugging
+    const html = await page.content();
+    await fs.promises.writeFile('page_source.html', html);
+
     await page.screenshot({ path: 'error_screenshot.png', fullPage: true });
   } finally {
     await browser.close();
