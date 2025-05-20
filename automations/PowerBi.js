@@ -4,7 +4,7 @@ const EMAIL = 'integrations@elbrit.org';
 const PASSWORD = 'F^983194242330ac12A';
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 1024 }
   });
@@ -18,22 +18,24 @@ const PASSWORD = 'F^983194242330ac12A';
     // 2. Login flow
     await page.fill('#email', EMAIL);
     await page.click('#submitBtn');
-    await page.waitForTimeout(3000); // Wait for password screen
+    await page.waitForTimeout(500); // Wait for password screen
 
     await page.fill('input[type="password"]', PASSWORD);
-    await page.click('input[type="submit"]');
+    await page.waitForTimeout(500);
+    await page.click('xpath=//*[@id="idSIButton9"]');
+    await page.waitForTimeout(500);
 
-    // 3. Handle 'Stay signed in?' screen
     try {
-      const staySignedInBtn = page.locator('input[id="idBtn_Back"]');
+      await page.locator('xpath=//*[@id="KmsiCheckboxField"]').check();
+      const staySignedInBtn = page.locator('xpath=//*[@id="idBtn_Back"]');
       await staySignedInBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(600);
       await staySignedInBtn.click();
       console.log("⏭️ Skipped 'Stay signed in'");
     } catch (e) {
       console.warn("⚠️ 'Stay signed in' prompt not immediately visible, retrying...");
       try {
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(500);
         const retryBtn = page.locator('input[id="idBtn_Back"]');
         if (await retryBtn.isVisible()) {
           await retryBtn.click();
@@ -45,12 +47,6 @@ const PASSWORD = 'F^983194242330ac12A';
         console.log("✅ No 'Stay signed in' prompt (fallback)");
       }
     }
-
-    // 4. Force redirect to home/dashboard in case login stalls
-    console.log("🔄 Forcing navigation to Power BI Home...");
-    await page.goto('https://app.powerbi.com/groups/me');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
 
     // Optional screenshot for debugging
     await page.screenshot({ path: 'after-login.png', fullPage: true });
@@ -70,21 +66,25 @@ const PASSWORD = 'F^983194242330ac12A';
     // 7. Refresh first report
     const reportRowSelector1 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[12]/div[2]/div/span';
     await page.waitForSelector(reportRowSelector1, { timeout: 10000 });
+    await page.waitForTimeout(500);
     await page.hover(reportRowSelector1);
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     const refreshIconSelector1 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[12]/div[2]/div/span/button[1]';
+    await page.waitForTimeout(500);
     const refreshButton1 = await page.waitForSelector(refreshIconSelector1, { timeout: 5000 });
     await refreshButton1.click({ force: true });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     // 8. Refresh second report
     const reportRowSelector2 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[8]/div[2]/div/span';
     await page.waitForSelector(reportRowSelector2, { timeout: 10000 });
+    await page.waitForTimeout(500);
     await page.hover(reportRowSelector2);
     await page.waitForTimeout(1000);
 
     const refreshIconSelector2 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[8]/div[2]/div/span/button[1]/mat-icon';
+    await page.waitForTimeout(500);
     const refreshButton2 = await page.waitForSelector(refreshIconSelector2, { timeout: 5000 });
     await refreshButton2.click({ force: true });
     await page.waitForTimeout(1000);
