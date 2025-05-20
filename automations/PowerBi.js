@@ -47,16 +47,11 @@ const PASSWORD = 'F^983194242330ac12A';
           await retryBtn.click();
           console.log("⏭️ Skipped 'Stay signed in' (after retry)");
         } else {
-          console.log("✅ No 'Stay signed in' prompt (confirmed)");
+          console.log(" No 'Stay signed in' prompt (confirmed)");
         }
       } catch {
         console.log("✅ No 'Stay signed in' prompt (fallback)");
       }
-    }
-
-    // 5. If login did not redirect properly
-    if (page.url().includes('login.microsoftonline.com')) {
-      throw new Error('❌ Login failed — still on Microsoft login page');
     }
 
     // 6. Force navigation to Power BI Home
