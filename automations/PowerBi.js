@@ -57,6 +57,7 @@ const PASSWORD = 'F^983194242330ac12A';
     // 6. Force navigation to Power BI Home
     await page.goto('https://app.powerbi.com/home?experience=power-bi', { waitUntil: 'domcontentloaded' });
     console.log('✅ Navigated to Power BI Home');
+    await page.screenshot({ path: 'before_workspace_click.png', fullPage: true });
 
     await page.locator('xapth=//*[@id="tilesHolder"]/div[1]/div/div').click();
 
