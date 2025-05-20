@@ -53,8 +53,13 @@ const ERROR_DIR = 'error';
     console.log('✅ Navigated to Power BI Home');
     await page.screenshot({ path: `${ERROR_DIR}/step-6-navigated-to-home.png`, fullPage: true });
 
+    console.log('🔍 Current URL:', page.url());
+
+
     await page.waitForSelector('#leftNavPane', { timeout: 30000 });
     console.log('🧭 Confirmed: Power BI Home dashboard loaded');
+
+    console.log('🔍 Current URL:', page.url());
 
     await page.waitForSelector('#leftNavPane', { timeout: 15000 });
     console.log('✅ Dashboard UI is visible');
