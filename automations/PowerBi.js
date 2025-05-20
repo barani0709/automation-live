@@ -59,11 +59,16 @@ const PASSWORD = 'F^983194242330ac12A';
     console.log('✅ Navigated to Power BI Home');
 
     // Wait until redirected to any valid Power BI page
-    await page.waitForFunction(() => window.location.href.includes('app.powerbi.com'), {}, { timeout: 20000 });
-    console.log('🧭 Final Redirect Complete:', page.url());
+    // Wait for final redirected homepage after SSO
+    await page.waitForFunction(() => {
+      return window.location.href.includes('/home?experience=power-bi');
+    }, {}, { timeout: 20000 });
+    console.log('🧭 Fully redirected to Power BI Home');
 
-    // Optional: wait until the nav is visible
-    await page.waitForSelector('#leftNavPane', { timeout: 10000 });
+    // Now wait for the actual nav pane to load
+    await page.waitForSelector('#leftNavPane', { timeout: 15000 });
+    console.log('✅ Dashboard UI is visible');
+
 
 
 
