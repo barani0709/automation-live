@@ -5,7 +5,7 @@ const EMAIL = 'integrations@elbrit.org';
 const PASSWORD = 'F^983194242330ac12A';
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 1024 }
   });
@@ -57,6 +57,11 @@ const PASSWORD = 'F^983194242330ac12A';
     // 6. Force navigation to Power BI Home
     await page.goto('https://app.powerbi.com/home?experience=power-bi', { waitUntil: 'domcontentloaded' });
     console.log('✅ Navigated to Power BI Home');
+
+    // ✅ Wait for final landing page to load
+    await page.waitForFunction(() => window.location.href === 'https://app.powerbi.com/', {}, { timeout: 20000 });
+    console.log('🧭 Final Redirect Complete:', page.url());
+
 
     // 7. Debug screenshot and URL
     await page.screenshot({ path: 'before_workspace_click.png', fullPage: true });
