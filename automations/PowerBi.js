@@ -22,9 +22,14 @@ const PASSWORD = 'F^983194242330ac12A';
 
     await page.fill('input[type="password"]', PASSWORD);
     await page.waitForTimeout(500);
-    await page.click('xpath=//*[@id="idSIButton9"]');
-    await page.waitForTimeout(500);
 
+    // 3. Click Sign In and wait for navigation
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
+      page.click('xpath=//*[@id="idSIButton9"]')
+    ]);
+
+    // 4. Handle "Stay signed in?" prompt
     try {
       await page.locator('xpath=//*[@id="KmsiCheckboxField"]').check();
       const staySignedInBtn = page.locator('xpath=//*[@id="idBtn_Back"]');
@@ -48,8 +53,9 @@ const PASSWORD = 'F^983194242330ac12A';
       }
     }
 
-    // Optional screenshot for debugging
-    await page.screenshot({ path: 'after-login.png', fullPage: true });
+    // Debug screenshot and URL before workspace check
+    await page.screenshot({ path: 'before_workspace_click.png', fullPage: true });
+    console.log('🧭 Current URL:', page.url());
 
     // 5. Click workspace switcher
     const switcherButton = page.locator('xpath=//*[@id="leftNavPane"]/div/div/tri-workspace-switcher/tri-navbar-label-item/button');
@@ -71,7 +77,6 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.waitForTimeout(500);
 
     const refreshIconSelector1 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[12]/div[2]/div/span/button[1]';
-    await page.waitForTimeout(500);
     const refreshButton1 = await page.waitForSelector(refreshIconSelector1, { timeout: 5000 });
     await refreshButton1.click({ force: true });
     await page.waitForTimeout(500);
@@ -84,7 +89,6 @@ const PASSWORD = 'F^983194242330ac12A';
     await page.waitForTimeout(1000);
 
     const refreshIconSelector2 = 'xpath=//*[@id="artifactContentView"]/div[1]/div[8]/div[2]/div/span/button[1]/mat-icon';
-    await page.waitForTimeout(500);
     const refreshButton2 = await page.waitForSelector(refreshIconSelector2, { timeout: 5000 });
     await refreshButton2.click({ force: true });
     await page.waitForTimeout(1000);
