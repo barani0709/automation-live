@@ -28,7 +28,7 @@ const DOWNLOADS_PATH = path.join('visit_data');
 let input = {
   fromMonth: 'Dec',
   toMonth: 'Dec',
-  year: 2024,
+  year: 2023,
   folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
   executionId: 'NmhU6IfHuGgx8oX1'
 };
@@ -115,7 +115,7 @@ async function processDivisions() {
   await clearOldFiles(DOWNLOADS_PATH);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {
@@ -148,8 +148,8 @@ async function processDivisions() {
             await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click({ force: true });
             await page.waitForTimeout(500);
-            const toYearId = await getYearIdFromPopup(page, year);
-            await page.locator(toYearId).click({ force: true });
+            // const toYearId = await getYearIdFromPopup(page, year);
+            await page.locator('#y3').click({ force: true });
             await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
@@ -160,10 +160,10 @@ async function processDivisions() {
               await page.locator(`#ctl00_CPH_chkDesignation_${i}`).check();
             }
 
-            await page.locator('#ctl00_CPH_chkVisit').check();
-            await page.locator('#ctl00_CPH_chkVisitDates').check();
+            await page.locator('#ctl00_CPH_chkVisit').check();//*[@id="ctl00_CPH_chkServiceWithDates"]
+            await page.locator('#ctl00_CPH_chkVisitDates').check();//*[@id="ctl00_CPH_chkSupport"]
 
-            const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
+            const downloadPromise = page.waitForEvent('download', { timeout: 60000 });//*[@id="ctl00_CPH_chkService"]
             await page.locator('#ctl00_CPH_imgExcel').click();
             const download = await downloadPromise;
 
