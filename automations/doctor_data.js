@@ -65,7 +65,7 @@ async function runMSLSummaryAutomation() {
     // === Step 4: Download ZIP ===
     const downloadPromise = page.waitForEvent('download', { timeout: 120000 });
     await page.locator('#ctl00_CPH_btnDownloadDivision').click({ timeout: 120000 });
-    const download = await downloadPromise;
+    const download = await downloadPromise;//*[@id="ctl00_CPH_btnDownloadDivision"]
 
     zipPath = path.join(DOWNLOADS_PATH, 'msl_summary.zip');
     await download.saveAs(zipPath);

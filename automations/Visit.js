@@ -26,9 +26,9 @@ const TABLE_NAME = 'visit';
 const DOWNLOADS_PATH = path.join('visit_data');
 
 let input = {
-  fromMonth: 'Dec',
-  toMonth: 'Dec',
-  year: 2023,
+  fromMonth: 'Jun',
+  toMonth: 'Jun',
+  year: 2025,
   folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
   executionId: 'NmhU6IfHuGgx8oX1'
 };

@@ -26,8 +26,8 @@ const AZURE_TABLE_NAME = 'secondary';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
 
 let input = {
-  fromMonth: 'Mar',
-  toMonth: 'Mar',
+  fromMonth: 'May',
+  toMonth: 'May',
   year: 2025,
   folderId: '',
   executionId: ''
@@ -81,21 +81,31 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
-    await tableClient.createEntity({
-      partitionKey: `${yearRaw}-${month}`,
-      rowKey: `${division}-${state}`,
-      fileUrl: blockBlobClient.url,
-      division,
-      state,
-      month,
-      year
-    });
+    // await tableClient.createEntity({
+    //   partitionKey: `${yearRaw}-${month}`,
+    //   rowKey: `${division}-${state}`,
+    //   fileUrl: blockBlobClient.url,
+    //   division,
+    //   state,
+    //   month,
+    //   year
+    // }, "Replace");
+
+    await tableClient.upsertEntity({
+    partitionKey: `${yearRaw}-${month}`,
+    rowKey: `${division}-${state}`,
+    fileUrl: blockBlobClient.url,
+    division,
+    state,
+    month,
+    year
+    }, "Replace");
     console.log(`📝 Logged metadata for: ${division}-${state}`);
   }
 }
 
 async function processAllDivisions() {
-  await clearOldFiles(downloadsPath);
+  await clearOldFiles(DOWNLOADS_PATH);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
   const divisionStateMap = {
@@ -117,7 +127,7 @@ async function processAllDivisions() {
 
   try {
     await loginToEcubix(page);
-
+    
     for (const [division, states] of Object.entries(divisionStateMap)) {
       console.log(`\n🚀 Processing Division: ${division}`);
       await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379');
@@ -153,9 +163,7 @@ async function processAllDivisions() {
           await page.locator('#ctl00_CPH_btnExport img').click();
           const download = await downloadPromise;
 
-          const safeDivision = division.replace(/\s+/g, '_');
-          const safeState = state.replace(/\s+/g, '_');
-          const fileName = `Secondary_${safeDivision}_${safeState}_${fromMonth}_${year}.xlsx`;
+          const fileName = `Secondary_${division}_${state}_${fromMonth}_${year}.xlsx`;
           const filePath = path.join(DOWNLOADS_PATH, fileName);
           await download.saveAs(filePath);
           console.log(`📥 Downloaded: ${fileName}`);

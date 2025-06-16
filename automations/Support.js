@@ -26,9 +26,9 @@ const TABLE_NAME = 'support';
 const DOWNLOADS_PATH = path.join('downloads');
 
 let input = {
-  months: ['Dec'],
-  startYear: 2023,
-  endYear: 2023,
+  months: ['May'],
+  startYear: 2025,
+  endYear: 2025,
   folderId: '',
   executionId: ''
 };
@@ -92,14 +92,22 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
-    await tableClient.createEntity({
-      partitionKey: `${yearRaw}-${month}`,
-      rowKey: `${division}`,
-      fileUrl: blockBlobClient.url,
-      division,
-      month,
-      year
-    });
+    // await tableClient.createEntity({
+    //   partitionKey: `${yearRaw}-${month}`,
+    //   rowKey: `${division}`,
+    //   fileUrl: blockBlobClient.url,
+    //   division,
+    //   month,
+    //   year
+    // });
+    await tableClient.upsertEntity({
+    partitionKey: `${yearRaw}-${month}`,
+    rowKey: `${division}`,
+    fileUrl: blockBlobClient.url,
+    division,
+    month,
+    year
+    }, "Replace");
     console.log(`📝 Logged metadata for: ${division}`);
   }
 }
@@ -126,10 +134,12 @@ async function processDivisions() {
               await page.goto('https://elbrit.ecubix.com/Apps/MSL/frmMSLDetail.aspx?a_id=341');
               await page.waitForLoadState('networkidle');
 
-              await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
+              // await page.locator('xpath=//*[@id="ctl00_CPH_rblMonthType_0"]').check({ force: true });
+
+              await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();//*[@id="ctl00_CPH_uclMonth_imgOK"]
               await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and contains(@class, 'dxeListBoxItem') and text()='${division}']`).click();
 
-              await page.locator('#ctl00_CPH_uclMonthSelect_imgOK').click();
+              await page.locator('#ctl00_CPH_uclMonthSelect_imgOK').click();//*[@id="ctl00_CPH_uclMonthSelect_imgOK"]
               await page.waitForTimeout(500);
               await page.locator('#changeYearMP').click({ force: true });
 
@@ -137,6 +147,17 @@ async function processDivisions() {
               await page.locator(yearId).click({ force: true });
               await page.waitForTimeout(500);
               await page.getByRole('cell', { name: month, exact: true }).click();
+              await page.waitForTimeout(1500);  
+
+              // const productDropdownIcon = page.locator('#ctl00_CPH_cmbProduct_B-1Img');
+              // await productDropdownIcon.waitFor({ state: 'visible', timeout: 10000 });
+              // await productDropdownIcon.click({ force: true });
+
+              // await page.waitForTimeout(1000);
+              // const selectAllBtn = page.locator('xpath=//*[@id="ctl00_CPH_cmbProduct_DDD_gv_StatusBar_btnProductSelectAll_0_CD"]');
+              // // await selectAllBtn.waitFor({ state: 'visible', timeout: 10000 });
+              // await selectAllBtn.click({ force: true });
+              // await page.waitForTimeout(1000);
 
               const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
               await page.getByRole('button', { name: 'Download' }).click();
@@ -152,7 +173,6 @@ async function processDivisions() {
             }
           }
         }
-
       } catch (err) {
         console.error(`❌ Division processing failed: ${division}`, err.message);
       } finally {
@@ -169,5 +189,6 @@ async function processDivisions() {
     console.log('\n✅ All divisions processed and browser closed!');
   }
 }
+
 
 processDivisions();

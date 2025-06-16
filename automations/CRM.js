@@ -26,9 +26,9 @@ const TABLE_NAME = 'crm';
 const DOWNLOADS_PATH = path.join('crm_data');
 
 let input = {
-  fromMonth: 'Apr',
-  toMonth: 'Apr',
-  year: 2024,
+  fromMonth: 'May',
+  toMonth: 'May',
+  year: 2025,
   folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
   executionId: 'NmhU6IfHuGgx8oX1'
 };
@@ -150,8 +150,8 @@ async function processDivisions() {
             await page.waitForTimeout(500);
             await page.locator('#changeYearMP').click({ force: true });
             await page.waitForTimeout(500);
-            const toYearId = await getYearIdFromPopup(page, year);
-            await page.locator(toYearId).click({ force: true });
+            // const toYearId = await getYearIdFromPopup(page, year);
+            await page.locator('#y3').click({ force: true });
             await page.waitForTimeout(500);
             await page.getByText(month, { exact: true }).click();
 
@@ -163,6 +163,7 @@ async function processDivisions() {
             }
 
             await page.locator('#ctl00_CPH_chkVisit').check();
+            await page.locator('#ctl00_CPH_chkSupport').check();
             await page.locator('#ctl00_CPH_chkService').check();
             await page.waitForTimeout(500);
 

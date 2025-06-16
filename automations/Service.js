@@ -25,8 +25,8 @@ const CONTAINER_NAME = 'service';
 const TABLE_NAME = 'service';
 
 let input = {
-  months: ['Dec'],
-  year: 2023,
+  months: ['Jun'],
+  year: 2025,
   folderId: '01VW6POPOITICIOXSNB5G2DRKL3DTWOP4D',
   executionId: 'lY8fRCBl9WAPzTjf'
 };
