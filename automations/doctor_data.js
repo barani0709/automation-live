@@ -8,7 +8,7 @@ import unzipper from 'unzipper';
 
 const DOWNLOADS_PATH = path.join('msl_summary_data');
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
-const folderId = '01VW6POPNNYBG5P2YJZJEJWXHVXI3AHN6Z';
+const folderId = '016ZV3NKKVKIOA37PO4JF2SOUKEA4R72OI';
 const executionId = 'rKDtnKHkUnf3CuSm';
 
 async function runMSLSummaryAutomation() {
