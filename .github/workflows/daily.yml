@@ -81,9 +81,12 @@ jobs:
           key: ${{ runner.os }}-playwright-browsers
 
       - name: 🚀 Run daily.js
+        shell: bash
         run: |
-            echo "⚙️ INPUT_JSON = ${{ toJSON(github.event.inputs.input_json) }}"
-            INPUT_JSON=${{ toJSON(github.event.inputs.input_json) }} node automations/Daily.js
+            export INPUT_JSON='${{ toJSON(github.event.inputs.input_json) }}'
+            echo "⚙️ INPUT_JSON = $INPUT_JSON"
+            node automations/Daily.js
+
 
 
 
