@@ -4,24 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  checkout:
+  run-doctor-automation:
     runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v3
 
-  setup-node:
-    needs: checkout
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📦 Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-  install-deps:
-    needs: setup-node
-    runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v3
@@ -34,7 +19,8 @@ jobs:
       - name: 💾 Cache node_modules
         uses: actions/cache@v4
         with:
-          path: node_modules
+          path: |
+            node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -45,36 +31,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-browsers
 
-      - name: 🧪 Install dependencies
+      - name: 🧪 Install dependencies and Playwright
         run: |
           npm ci
           npx playwright install --with-deps
 
-  run-script:
-    needs: install-deps
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v3
-
-      - name: 📦 Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: 💾 Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: 💾 Restore Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-browsers
-
-      - name: 🚀 Run doctor_data.js
+      - name: 🚀 Run hierarchy_data.js script
         run: node automations/hierarchy_data.js
