@@ -41,7 +41,7 @@ jobs:
           echo "INPUT_JSON={\"months\":[${monthsArr}],\"year\":${{ github.event.inputs.year }}}" >> $GITHUB_ENV
 
       - name: 🚀 Run Dr Service Automation Script
-        run: node automations/dr-service.js
+        run: node automations/Service.js
 
       - name: 📤 Upload XLSX Reports (Artifact)
         if: always()
