@@ -26,9 +26,7 @@ const TABLE_NAME = 'service';
 
 let input = {
   months: ['Jun'],
-  year: 2025,
-  folderId: '01VW6POPOITICIOXSNB5G2DRKL3DTWOP4D',
-  executionId: 'lY8fRCBl9WAPzTjf'
+  year: 2025
 };
 
 try {
@@ -47,7 +45,8 @@ const { months, year: targetYear } = input;
 const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
 
 const divisions = [
-  'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
+  'AP ELBRIT', 
+  'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
   'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
 
@@ -90,7 +89,7 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
-    await tableClient.createEntity({
+    await tableClient.upsertEntity({
       partitionKey: `${yearRaw}-${month}`,
       rowKey: `${division}`,
       fileUrl: blockBlobClient.url,
@@ -98,6 +97,14 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
       month,
       year
     });
+    // await tableClient.upsertEntity({
+    // partitionKey: `${yearRaw}-${month}`,
+    // rowKey: `${division}`,
+    // fileUrl: blockBlobClient.url,
+    // division,
+    // month,
+    // year
+    // }, "Replace");
     console.log(`📝 Logged metadata for: ${division}`);
   }
 }
@@ -106,7 +113,7 @@ async function processDivisions() {
   await clearOldFiles(downloadsPath);
   await fs.mkdir(downloadsPath, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {

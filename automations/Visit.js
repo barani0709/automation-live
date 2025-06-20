@@ -95,7 +95,7 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
-    await tableClient.createEntity({
+    await tableClient.upsertEntity({
       partitionKey: `${yearRaw}-${month}`,
       rowKey: `${division}`,
       fileUrl: blockBlobClient.url,
