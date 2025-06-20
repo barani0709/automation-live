@@ -30,9 +30,11 @@ let configInput = {
   toDate: '2025-05-25'
 };
 
-if (process.env.INPUT_JSON) {
+const inputJson = process.env?.INPUT_JSON || process?.env?.['INPUT_JSON'] || '';
+
+if (inputJson) {
   try {
-    const parsed = JSON.parse(process.env.INPUT_JSON);
+    const parsed = JSON.parse(inputJson);
     configInput = { ...configInput, ...parsed };
     console.log('✅ Loaded dynamic INPUT_JSON:', configInput);
   } catch (err) {
@@ -42,6 +44,7 @@ if (process.env.INPUT_JSON) {
 } else {
   console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
 }
+
 
 function parseDate(dateStr, label) {
   const date = new Date(dateStr);
