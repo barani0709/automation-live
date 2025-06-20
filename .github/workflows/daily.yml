@@ -80,7 +80,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-browsers
 
-      - name: 🚀 Run dr_service.js
-        env:
-          INPUT_JSON: ${{ github.event.inputs.input_json }}
-        run: node automations/Daily.js
+      - name: 🚀 Run daily.js
+        run: |
+            INPUT_JSON='${{ github.event.inputs.input_json }}' node automations/Daily.js
+
