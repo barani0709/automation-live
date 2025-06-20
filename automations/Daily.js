@@ -26,22 +26,24 @@ const divisions = [
 ];
 
 let configInput = {
-  fromDate: '2025-05-01',
-  toDate: '2025-05-25'
+  fromDate: '2025-06-01',
+  toDate: '2025-06-25'
 };
 
-if (process.env.INPUT_JSON) {
-  try {
-    const parsed = JSON.parse(process.env.INPUT_JSON);
+try {
+  const rawInput = typeof process !== 'undefined' && typeof process.env !== 'undefined' ? process.env.INPUT_JSON : null;
+  if (rawInput) {
+    const parsed = JSON.parse(rawInput);
     configInput = { ...configInput, ...parsed };
     console.log('✅ Loaded dynamic INPUT_JSON:', configInput);
-  } catch (err) {
-    console.error('❌ Failed to parse INPUT_JSON:', err.message);
-    console.warn('⚠️ Falling back to defaults.');
+  } else {
+    console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
   }
-} else {
-  console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
+} catch (err) {
+  console.error('❌ Failed to parse INPUT_JSON:', err.message);
+  console.warn('⚠️ Using fallback defaults.');
 }
+
 
 function parseDate(dateStr, label) {
   const date = new Date(dateStr);
