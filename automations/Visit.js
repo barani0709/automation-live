@@ -19,8 +19,8 @@ import {
 
 config();
 
-const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
-const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
+const AZURE_STORAGE_ACCOUNT = 'elbrit';
+const AZURE_STORAGE_KEY = 'ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==';
 const CONTAINER_NAME = 'visit';
 const TABLE_NAME = 'visit';
 const DOWNLOADS_PATH = path.join('visit_data');
@@ -28,9 +28,7 @@ const DOWNLOADS_PATH = path.join('visit_data');
 let input = {
   fromMonth: 'Jun',
   toMonth: 'Jun',
-  year: 2025,
-  folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
-  executionId: 'NmhU6IfHuGgx8oX1'
+  year: 2025
 };
 
 try {
@@ -39,9 +37,7 @@ try {
     input = {
       fromMonth: parsed.fromMonth || input.fromMonth,
       toMonth: parsed.toMonth || input.toMonth,
-      year: parsed.year || input.year,
-      folderId: input.folderId,
-      executionId: input.executionId
+      year: parsed.year || input.year
     };
     console.log('✅ Dynamic input loaded (with fixed IDs):', input);
   } else {
@@ -115,7 +111,7 @@ async function processDivisions() {
   await clearOldFiles(DOWNLOADS_PATH);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {

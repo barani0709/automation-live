@@ -1,0 +1,54 @@
+name: 🧾 Visit Activity Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      fromMonth:
+        description: 'From Month (e.g., Jan)'
+        required: true
+        default: 'Jun'
+      toMonth:
+        description: 'To Month (e.g., Jun)'
+        required: true
+        default: 'Jun'
+      year:
+        description: 'Year (e.g., 2025)'
+        required: true
+        default: '2025'
+
+jobs:
+  run-visit-activity:
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_STORAGE_ACCOUNT: elbrit
+      AZURE_STORAGE_KEY: ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: 🧪 Set INPUT_JSON from Inputs
+        run: |
+          echo "INPUT_JSON={\"fromMonth\":\"${{ github.event.inputs.fromMonth }}\",\"toMonth\":\"${{ github.event.inputs.toMonth }}\",\"year\":${{ github.event.inputs.year }}}" >> $GITHUB_ENV
+
+      - name: 🚀 Run Visit Activity Script
+        run: node automations/Visit.js
+
+      - name: 📤 Upload CSV Reports (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visit-activity-csvs
+          path: visit_data/
