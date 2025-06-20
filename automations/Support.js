@@ -48,9 +48,10 @@ try {
 const { months, startYear, endYear } = input;
 
 const divisions = [
-  'AP ELBRIT', 
-  'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
-  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
+  // 'AP ELBRIT', 
+  // 'Delhi Elbrit', 'Elbrit', 
+  'ELBRIT AURA PROXIMA',
+  // 'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
 
 async function uploadToAzureBlobAndTable(directory, year, month) {

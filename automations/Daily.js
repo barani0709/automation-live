@@ -200,7 +200,7 @@ async function process() {
   const month = fromDate.toLocaleString('default', { month: 'short' });
   const year = fromDate.getFullYear();
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {

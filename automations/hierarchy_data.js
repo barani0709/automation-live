@@ -18,7 +18,7 @@ async function runMSLSummaryAutomation() {
   // Create folder if not exists
   await fsPromises.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   let zipPath = '';
