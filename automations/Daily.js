@@ -30,18 +30,27 @@ let input = {
   toDate: '2025-06-25'
 };
 
-try {
-  if (process.env.INPUT_JSON) {
-    const parsed = JSON.parse(process.env.INPUT_JSON);
-    input = { ...input, ...parsed };
-    console.log('✅ Dynamic input loaded:', input);
-  } else {
-    console.log('⚠️ No INPUT_JSON found. Using default values.');
+const rawInput = process.env.INPUT_JSON;
+
+console.log("🔍 Received INPUT_JSON:", rawInput);
+
+if (rawInput) {
+  try {
+    const parsed = JSON.parse(rawInput);
+    if (parsed.fromDate && parsed.toDate) {
+      input = { ...input, ...parsed };
+      console.log('✅ Dynamic input loaded:', input);
+    } else {
+      throw new Error("Missing 'fromDate' or 'toDate' in parsed INPUT_JSON.");
+    }
+  } catch (error) {
+    console.error('❌ Failed to parse INPUT_JSON:', error.message);
+    console.warn('⚠️ Reverting to default input:', input);
   }
-} catch (error) {
-  console.error('❌ Failed to parse INPUT_JSON:', error.message);
-  console.warn('⚠️ Reverting to default input:', input);
+} else {
+  console.warn('⚠️ No INPUT_JSON found. Using default values:', input);
 }
+
 
 
 function parseDate(dateStr, label) {
