@@ -27,9 +27,7 @@ const divisions = [
 
 let configInput = {
   fromDate: '2025-05-01',
-  toDate: '2025-05-25',
-  folderId: '',
-  executionId: ''
+  toDate: '2025-05-25'
 };
 
 if (process.env.INPUT_JSON) {
