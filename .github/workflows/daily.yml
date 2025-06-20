@@ -16,13 +16,6 @@ jobs:
   run-script:
     runs-on: ubuntu-latest
 
-    env:
-      INPUT_JSON: >-
-        {
-          "fromDate": "${{ github.event.inputs.fromDate }}",
-          "toDate": "${{ github.event.inputs.toDate }}"
-        }
-
     steps:
       - name: 🛎️ Checkout repo
         uses: actions/checkout@v4
@@ -38,5 +31,8 @@ jobs:
       - name: 🎭 Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: 🧪 Run Daily Visit Script
+      - name: 🧪 Set INPUT_JSON from workflow inputs
+        run: echo "INPUT_JSON={\"fromDate\":\"${{ github.event.inputs.fromDate }}\",\"toDate\":\"${{ github.event.inputs.toDate }}\"}" >> $GITHUB_ENV
+
+      - name: 🚀 Run Daily Visit Script
         run: node automations/Daily.js
