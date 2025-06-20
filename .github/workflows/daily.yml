@@ -2,12 +2,16 @@ name: Run Daily visit Automation
 
 on:
   workflow_dispatch:
+    inputs:
+      input_json:
+        description: 'Input JSON string for Daily visit automation'
+        required: true
 
 jobs:
   checkout:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
   setup-node:
@@ -23,7 +27,7 @@ jobs:
     needs: setup-node
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
       - name: 📦 Set up Node.js
@@ -48,13 +52,13 @@ jobs:
       - name: 🧪 Install dependencies
         run: |
           npm ci
-          npx playwright install --with-deps
+          npx playwright install
 
   run-script:
     needs: install-deps
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
       - name: 📦 Set up Node.js
@@ -76,5 +80,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-browsers
 
-      - name: 🚀 Run doctor_data.js
+      - name: 🚀 Run dr_service.js
+        env:
+          INPUT_JSON: ${{ github.event.inputs.input_json }}
         run: node automations/Daily.js
