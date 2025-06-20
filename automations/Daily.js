@@ -30,7 +30,8 @@ let configInput = {
   toDate: '2025-05-25'
 };
 
-const inputJson = process.env?.INPUT_JSON || process?.env?.['INPUT_JSON'] || '';
+// FIXED: guard for process and INPUT_JSON
+const inputJson = typeof process !== 'undefined' && process.env?.INPUT_JSON ? process.env.INPUT_JSON : '';
 
 if (inputJson) {
   try {
@@ -44,6 +45,7 @@ if (inputJson) {
 } else {
   console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
 }
+
 
 
 function parseDate(dateStr, label) {
