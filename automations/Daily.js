@@ -41,7 +41,7 @@ if (rawInput) {
       input = { ...input, ...parsed };
       console.log('✅ Dynamic input loaded:', input);
     } else {
-      throw new Error("Missing 'fromDate' or 'toDate' in parsed INPUT_JSON.");
+      throw new Error("Missing 'fromDate' or 'toDate' in INPUT_JSON.");
     }
   } catch (error) {
     console.error('❌ Failed to parse INPUT_JSON:', error.message);
@@ -50,7 +50,6 @@ if (rawInput) {
 } else {
   console.warn('⚠️ No INPUT_JSON found. Using default values:', input);
 }
-
 
 
 function parseDate(dateStr, label) {
