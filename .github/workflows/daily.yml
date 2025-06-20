@@ -82,5 +82,7 @@ jobs:
 
       - name: 🚀 Run daily.js
         run: |
+            echo "Running automation with INPUT_JSON=${{ github.event.inputs.input_json }}"
             INPUT_JSON='${{ github.event.inputs.input_json }}' node automations/Daily.js
+
 
