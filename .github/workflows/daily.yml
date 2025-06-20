@@ -33,7 +33,7 @@ jobs:
 
       - name: 🧪 Set INPUT_JSON from workflow inputs
         run: |
-            echo 'INPUT_JSON={"fromDate":"${{ github.event.inputs.fromDate }}","toDate":"${{ github.event.inputs.toDate }}"}' >> $GITHUB_ENV
+          echo 'INPUT_JSON={"fromDate":"${{ github.event.inputs.fromDate }}","toDate":"${{ github.event.inputs.toDate }}"}' >> $GITHUB_ENV
 
       - name: 🚀 Run Daily Visit Script
         run: node automations/Daily.js

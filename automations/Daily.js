@@ -1,3 +1,4 @@
+import process from 'node:process'; // ✅ Required in ESM for process.env
 import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -11,7 +12,7 @@ import {
   AzureNamedKeyCredential
 } from '@azure/data-tables';
 
-config();
+config(); // Load from .env if needed
 
 const AZURE_STORAGE_ACCOUNT = 'elbrit';
 const AZURE_STORAGE_KEY = 'ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==';
@@ -25,25 +26,30 @@ const divisions = [
   'Kerala Elbrit', 'VASCO'
 ];
 
-let configInput = {
-  fromDate: '2025-06-01',
-  toDate: '2025-06-25'
-};
-
-try {
-  const rawInput = typeof process !== 'undefined' && typeof process.env !== 'undefined' ? process.env.INPUT_JSON : null;
-  if (rawInput) {
-    const parsed = JSON.parse(rawInput);
-    configInput = { ...configInput, ...parsed };
-    console.log('✅ Loaded dynamic INPUT_JSON:', configInput);
-  } else {
-    console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
-  }
-} catch (err) {
-  console.error('❌ Failed to parse INPUT_JSON:', err.message);
-  console.warn('⚠️ Using fallback defaults.');
+// ✅ Strict INPUT_JSON loading
+if (!process.env.INPUT_JSON) {
+  throw new Error('❌ INPUT_JSON is missing. Please provide it as an environment variable.');
 }
 
+let configInput;
+
+try {
+  console.log('📥 Raw INPUT_JSON:', process.env.INPUT_JSON);
+  const parsed = JSON.parse(process.env.INPUT_JSON);
+
+  if (!parsed.fromDate || !parsed.toDate) {
+    throw new Error('❌ INPUT_JSON must contain both "fromDate" and "toDate".');
+  }
+
+  configInput = {
+    fromDate: parsed.fromDate,
+    toDate: parsed.toDate
+  };
+
+  console.log('✅ Parsed INPUT_JSON:', configInput);
+} catch (err) {
+  throw new Error(`❌ Failed to parse INPUT_JSON: ${err.message}`);
+}
 
 function parseDate(dateStr, label) {
   const date = new Date(dateStr);
@@ -193,7 +199,7 @@ async function selectToDate(page, toDate) {
   await dayLocator.first().click();
 }
 
-async function process() {
+async function run() {
   await clearOldFiles(DOWNLOADS_PATH);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
@@ -266,4 +272,4 @@ async function process() {
   }
 }
 
-process();
+run();
