@@ -83,7 +83,7 @@ jobs:
       - name: 🚀 Run daily.js
         env:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
-        run: node automations/daily.js
+        run: node automations/Daily.js
 
 
 
