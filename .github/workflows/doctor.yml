@@ -1,4 +1,4 @@
-name: Run Doctor Data Automation
+name: Run Doctor Master Automation
 
 on:
   workflow_dispatch:
