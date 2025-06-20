@@ -25,23 +25,24 @@ const divisions = [
   'Kerala Elbrit', 'VASCO'
 ];
 
-let configInput = {
-  fromDate: '2025-05-01',
-  toDate: '2025-05-25'
+let input = {
+  fromDate: '2025-06-01',
+  toDate: '2025-06-25'
 };
 
-if (process.env.INPUT_JSON) {
-  try {
+try {
+  if (process.env.INPUT_JSON) {
     const parsed = JSON.parse(process.env.INPUT_JSON);
-    configInput = { ...configInput, ...parsed };
-    console.log('✅ Loaded dynamic INPUT_JSON:', configInput);
-  } catch (err) {
-    console.error('❌ Failed to parse INPUT_JSON:', err.message);
-    console.warn('⚠️ Falling back to defaults.');
+    input = { ...input, ...parsed };
+    console.log('✅ Dynamic input loaded:', input);
+  } else {
+    console.log('⚠️ No INPUT_JSON found. Using default values.');
   }
-} else {
-  console.warn('⚠️ No INPUT_JSON provided. Using fallback defaults.');
+} catch (error) {
+  console.error('❌ Failed to parse INPUT_JSON:', error.message);
+  console.warn('⚠️ Reverting to default input:', input);
 }
+
 
 function parseDate(dateStr, label) {
   const date = new Date(dateStr);
@@ -49,8 +50,8 @@ function parseDate(dateStr, label) {
   return date;
 }
 
-const fromDate = parseDate(configInput.fromDate, 'fromDate');
-const toDate = parseDate(configInput.toDate, 'toDate');
+const fromDate = parseDate(input.fromDate, 'fromDate');
+const toDate = parseDate(input.toDate, 'toDate');
 
 async function clearOldFiles(directory) {
   try {
