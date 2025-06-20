@@ -1,10 +1,10 @@
-name: Run Doctor Data Automation
+name: Run Hierarchy Data Automation
 
 on:
   workflow_dispatch:
 
 jobs:
-  run-doctor-automation:
+  run-hierarchy-automation:
     runs-on: ubuntu-latest
 
     steps:
