@@ -45,4 +45,4 @@ jobs:
           INPUT_JSON: ${{ github.event.inputs.input_json }}
           AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
           AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
-        run: node automations/daily_visit_data.js
+        run: node automations/Daily.js
