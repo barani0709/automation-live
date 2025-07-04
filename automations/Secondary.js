@@ -3,6 +3,7 @@ import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { config } from 'dotenv';
+import fetch from 'node-fetch';
 import {
   BlobServiceClient,
   StorageSharedKeyCredential
@@ -24,10 +25,11 @@ const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const AZURE_CONTAINER_NAME = 'secondary-reports';
 const AZURE_TABLE_NAME = 'secondary';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/6d0f1b49-eeb9-44d5-80c3-dc9b89c2484a';
 
 let input = {
-  fromMonth: 'May',
-  toMonth: 'May',
+  fromMonth: 'Jun',
+  toMonth: 'Jun',
   year: 2025,
   folderId: '',
   executionId: ''
@@ -47,6 +49,43 @@ try {
 
 const { fromMonth, toMonth, year } = input;
 
+async function triggerWebhook(partitionKey) {
+  try {
+    // Extract year and month from partition key (format: "YYYY-MMM")
+    const [yearPart, monthPart] = partitionKey.split('-');
+    const formattedDate = `${yearPart}-${monthPart}`;
+    
+    const webhookData = {
+      Date: formattedDate,
+      Drop: false
+    };
+
+    console.log(`🔔 Triggering webhook with data:`, webhookData);
+    console.log(`🌐 POST URL: ${WEBHOOK_URL}`);
+    console.log(`📄 POST Body: ${JSON.stringify(webhookData)}`);
+
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webhookData)
+    });
+
+    if (response.ok) {
+      console.log(`✅ Webhook triggered successfully for ${formattedDate}`);
+      const responseText = await response.text();
+      console.log(`📝 Response: ${responseText}`);
+    } else {
+      console.error(`❌ Webhook failed with status: ${response.status}`);
+      const responseText = await response.text();
+      console.error(`📝 Error response: ${responseText}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error triggering webhook:`, error.message);
+  }
+}
+
 async function uploadToAzureBlobAndTable(directory, year, month) {
   const sharedKey = new StorageSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY);
   const blobClient = new BlobServiceClient(`https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`, sharedKey);
@@ -62,6 +101,7 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
   }
 
   const files = await fs.readdir(directory);
+  const uniquePartitionKeys = new Set();
 
   for (const file of files) {
     const match = file.match(/^Secondary_(.+?)_(.+?)_(\w+)_(\d{4})\.xlsx$/);
@@ -91,8 +131,11 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     //   year
     // }, "Replace");
 
+    const partitionKey = `${yearRaw}-${month}`;
+    uniquePartitionKeys.add(partitionKey);
+
     await tableClient.upsertEntity({
-    partitionKey: `${yearRaw}-${month}`,
+    partitionKey: partitionKey,
     rowKey: `${division}-${state}`,
     fileUrl: blockBlobClient.url,
     division,
@@ -102,6 +145,8 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     }, "Replace");
     console.log(`📝 Logged metadata for: ${division}-${state}`);
   }
+
+  return Array.from(uniquePartitionKeys);
 }
 
 async function processAllDivisions() {
@@ -110,15 +155,15 @@ async function processAllDivisions() {
 
   const divisionStateMap = {
     'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
-    'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
-    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
-    'Elbrit Bangalore': ['Karnataka'],
-    'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    'Elbrit Mysore': ['Karnataka'],
-    'KE Aura N Proxima': ['Kerala'],
-    'Kerala Elbrit': ['Kerala'],
-    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
+    // 'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
+    // 'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    // 'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
+    // 'Elbrit Bangalore': ['Karnataka'],
+    // 'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    // 'Elbrit Mysore': ['Karnataka'],
+    // 'KE Aura N Proxima': ['Kerala'],
+    // 'Kerala Elbrit': ['Kerala'],
+    // 'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
   };
 
   const browser = await chromium.launch({ headless: false });
@@ -173,7 +218,13 @@ async function processAllDivisions() {
       }
     }
 
-    await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
+    const partitionKeys = await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
+
+    // Trigger webhook for each unique partition key
+    console.log('\n🔔 Triggering webhooks...');
+    for (const partitionKey of partitionKeys) {
+      await triggerWebhook(partitionKey);
+    }
 
   } catch (err) {
     console.error('❌ Automation error:', err.message);

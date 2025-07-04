@@ -26,7 +26,7 @@ const TABLE_NAME = 'support';
 const DOWNLOADS_PATH = path.join('downloads');
 
 let input = {
-  months: ['May'],
+  months: ['Apr'],
   startYear: 2025,
   endYear: 2025,
   folderId: '',
@@ -48,10 +48,10 @@ try {
 const { months, startYear, endYear } = input;
 
 const divisions = [
-  // 'AP ELBRIT', 
-  // 'Delhi Elbrit', 'Elbrit', 
+  'AP ELBRIT', 
+  'Delhi Elbrit', 'Elbrit', 
   'ELBRIT AURA PROXIMA',
-  // 'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
+  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
 
 async function uploadToAzureBlobAndTable(directory, year, month) {

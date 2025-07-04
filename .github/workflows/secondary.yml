@@ -1,0 +1,62 @@
+name: 📊 Secondary Sales Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      fromMonth:
+        description: 'From Month (e.g., May)'
+        required: true
+        default: 'May'
+      toMonth:
+        description: 'To Month (e.g., May)'
+        required: true
+        default: 'May'
+      year:
+        description: 'Year (e.g., 2025)'
+        required: true
+        default: '2025'
+
+jobs:
+  run-secondary-sales:
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_STORAGE_ACCOUNT: elbrit
+      AZURE_STORAGE_KEY: ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: 🧪 Set INPUT_JSON from Workflow Inputs
+        run: |
+          echo "INPUT_JSON={\"fromMonth\":\"${{ github.event.inputs.fromMonth }}\",\"toMonth\":\"${{ github.event.inputs.toMonth }}\",\"year\":${{ github.event.inputs.year }}}" >> $GITHUB_ENV
+
+      - name: 🚀 Run Secondary Sales Automation Script
+        run: node automations/Secondary.js
+
+      - name: 📤 Upload Secondary Sales Reports (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secondary-sales-reports
+          path: secondary_sales_data/
+
+      - name: 📋 Display Summary
+        if: always()
+        run: |
+          echo "🎯 Secondary Sales Automation Complete!"
+          echo "📅 Period: ${{ github.event.inputs.fromMonth }} - ${{ github.event.inputs.toMonth }} ${{ github.event.inputs.year }}"
+          echo "📁 Files processed and uploaded to Azure Blob Storage"
+          echo "🔔 Webhook triggers sent to n8n" 

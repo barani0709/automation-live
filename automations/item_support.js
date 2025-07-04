@@ -26,7 +26,7 @@ const TABLE_NAME = 'supportitem';
 const DOWNLOADS_PATH = path.join('product_support');
 
 let input = {
-  months: ['May'],
+  months: ['Apr'],
   startYear: 2025,
   endYear: 2025,
   folderId: '',
