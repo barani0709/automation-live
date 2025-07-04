@@ -144,14 +144,14 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     const partitionKey = `${yearRaw}-${month}`;
     uniquePartitionKeys.add(partitionKey);
 
-    await tableClient.createEntity({
-      partitionKey: partitionKey,
-      rowKey: `${division}`,
-      fileUrl: blockBlobClient.url,
-      division,
-      month,
-      year
-    });
+    // await tableClient.upsertEntity({
+    //   partitionKey: partitionKey,
+    //   rowKey: `${division}`,
+    //   fileUrl: blockBlobClient.url,
+    //   division,
+    //   month,
+    //   year
+    // },"Replace");
     await tableClient.upsertEntity({
         partitionKey: partitionKey,
         rowKey: `${division}`,
