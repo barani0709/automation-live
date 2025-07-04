@@ -155,18 +155,18 @@ async function processAllDivisions() {
 
   const divisionStateMap = {
     'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
-    // 'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
-    // 'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    // 'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
-    // 'Elbrit Bangalore': ['Karnataka'],
-    // 'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
-    // 'Elbrit Mysore': ['Karnataka'],
-    // 'KE Aura N Proxima': ['Kerala'],
-    // 'Kerala Elbrit': ['Kerala'],
-    // 'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
+    'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
+    'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
+    'Elbrit Bangalore': ['Karnataka'],
+    'Elbrit CND': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
+    'Elbrit Mysore': ['Karnataka'],
+    'KE Aura N Proxima': ['Kerala'],
+    'Kerala Elbrit': ['Kerala'],
+    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
   };
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 

@@ -3,6 +3,7 @@ import { chromium } from '@playwright/test';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { config } from 'dotenv';
+import fetch from 'node-fetch';
 import {
   BlobServiceClient,
   StorageSharedKeyCredential
@@ -24,6 +25,7 @@ const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const CONTAINER_NAME = 'callavg';
 const TABLE_NAME = 'callavg';
 const DOWNLOADS_PATH = path.join('call_data');
+const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 let input = {
   fromMonth: 'May',
@@ -60,6 +62,45 @@ const divisions = [
   'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
 
+async function triggerWebhook(partitionKey) {
+  try {
+    // Extract year and month from partition key (format: "YYYY-MMM")
+    const [yearPart, monthPart] = partitionKey.split('-');
+    const formattedDate = `${yearPart}-${monthPart}`;
+    
+    const webhookData = {
+      Date: formattedDate,
+      Drop: "false",
+      flow: "call",
+      Type: ["callavg"]
+    };
+
+    console.log(`🔔 Triggering webhook with data:`, webhookData);
+    console.log(`🌐 POST URL: ${WEBHOOK_URL}`);
+    console.log(`📄 POST Body: ${JSON.stringify(webhookData)}`);
+
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webhookData)
+    });
+
+    if (response.ok) {
+      console.log(`✅ Webhook triggered successfully for ${formattedDate}`);
+      const responseText = await response.text();
+      console.log(`📝 Response: ${responseText}`);
+    } else {
+      console.error(`❌ Webhook failed with status: ${response.status}`);
+      const responseText = await response.text();
+      console.error(`📝 Error response: ${responseText}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error triggering webhook:`, error.message);
+  }
+}
+
 async function uploadToAzureBlobAndTable(directory, year, month) {
   const sharedKey = new StorageSharedKeyCredential(AZURE_STORAGE_ACCOUNT, AZURE_STORAGE_KEY);
   const blobClient = new BlobServiceClient(`https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`, sharedKey);
@@ -79,6 +120,7 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
   }
 
   const files = await fs.readdir(directory);
+  const uniquePartitionKeys = new Set();
 
   for (const file of files) {
     const match = file.match(/^call_avg_(.+?)_(\w+)-(\d{4})\.csv$/);
@@ -99,8 +141,11 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
+    const partitionKey = `${yearRaw}-${month}`;
+    uniquePartitionKeys.add(partitionKey);
+
     await tableClient.createEntity({
-      partitionKey: `${yearRaw}-${month}`,
+      partitionKey: partitionKey,
       rowKey: `${division}`,
       fileUrl: blockBlobClient.url,
       division,
@@ -108,7 +153,7 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
       year
     });
     await tableClient.upsertEntity({
-        partitionKey: `${yearRaw}-${month}`,
+        partitionKey: partitionKey,
         rowKey: `${division}`,
         fileUrl: blockBlobClient.url,
         division,
@@ -117,13 +162,15 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     }, "Replace");
     console.log(`📝 Logged metadata for: ${division}`);
   }
+
+  return Array.from(uniquePartitionKeys);
 }
 
 async function processDivisions() {
   await clearOldFiles(DOWNLOADS_PATH);
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     acceptDownloads: true,
     viewport: { width: 1920, height: 1080 }  // or use null to simulate maximized
@@ -198,7 +245,13 @@ async function processDivisions() {
       }
     }
 
-    await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
+    const partitionKeys = await uploadToAzureBlobAndTable(DOWNLOADS_PATH, year, fromMonth);
+
+    // Trigger webhook for each unique partition key
+    console.log('\n🔔 Triggering webhooks...');
+    for (const partitionKey of partitionKeys) {
+      await triggerWebhook(partitionKey);
+    }
 
   } catch (error) {
     console.error('❌ Automation error:', error.message);
