@@ -1,0 +1,63 @@
+name: 📊 Support Reports Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: 'Comma-separated months (e.g., Apr or Jan,Feb,Mar)'
+        required: true
+        default: 'Apr'
+      startYear:
+        description: 'Start Year (e.g., 2025)'
+        required: true
+        default: '2025'
+      endYear:
+        description: 'End Year (e.g., 2025)'
+        required: true
+        default: '2025'
+
+jobs:
+  run-support-reports:
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_STORAGE_ACCOUNT: elbrit
+      AZURE_STORAGE_KEY: ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: 🧪 Set INPUT_JSON from Workflow Inputs
+        run: |
+          monthsArr=$(echo "${{ github.event.inputs.months }}" | awk -F',' '{ for(i=1;i<=NF;i++) printf "\"%s\",", $i }' | sed 's/,$//')
+          echo "INPUT_JSON={\"months\":[${monthsArr}],\"startYear\":${{ github.event.inputs.startYear }},\"endYear\":${{ github.event.inputs.endYear }}}" >> $GITHUB_ENV
+
+      - name: 🚀 Run Support Reports Automation Script
+        run: node automations/Support.js
+
+      - name: 📤 Upload Support Reports (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: support-reports
+          path: downloads/
+
+      - name: 📋 Display Summary
+        if: always()
+        run: |
+          echo "🎯 Support Reports Automation Complete!"
+          echo "📅 Period: ${{ github.event.inputs.months }} (${{ github.event.inputs.startYear }}-${{ github.event.inputs.endYear }})"
+          echo "📁 Files processed and uploaded to Azure Blob Storage"
+          echo "🏢 Container: support | Table: support" 
