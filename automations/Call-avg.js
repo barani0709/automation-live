@@ -28,8 +28,8 @@ const DOWNLOADS_PATH = path.join('call_data');
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 let input = {
-  fromMonth: 'May',
-  toMonth: 'May',
+  fromMonth: 'Jul',
+  toMonth: 'Jul',
   year: 2025,
   folderId: '01VW6POPOMA565LEJTGNDZFB4PJAUCGSXF',
   executionId: 'NmhU6IfHuGgx8oX1'

@@ -28,8 +28,8 @@ const DOWNLOADS_PATH = path.join('secondary_sales_data');
 const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/6d0f1b49-eeb9-44d5-80c3-dc9b89c2484a';
 
 let input = {
-  fromMonth: 'Jun',
-  toMonth: 'Jun',
+  fromMonth: 'Apr',
+  toMonth: 'Apr',
   year: 2025,
   folderId: '',
   executionId: ''
@@ -57,7 +57,7 @@ async function triggerWebhook(partitionKey) {
     
     const webhookData = {
       Date: formattedDate,
-      Drop: false
+      Drop: true
     };
 
     console.log(`🔔 Triggering webhook with data:`, webhookData);
