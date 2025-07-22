@@ -7,8 +7,8 @@ import FormData from 'form-data';
 // === HARDCODED CONFIG ===
 const downloadsPath = path.join('pob_daily_data');
 const folderId = '016ZV3NKNDKJPQND4AHVEKVN5OI4IBJIXP';
-const executionId = 'CSe4VbQ2hYdz9a0X';
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
+const executionId = 'IFFcwOf4T1miptbI';
+const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/632cbe49-45bb-42e9-afeb-62a0aeb908e1';
 
 const divisions = [
   'AP ELBRIT',

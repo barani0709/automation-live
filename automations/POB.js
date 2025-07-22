@@ -24,7 +24,7 @@ let configInput = {
   fromDate: '2025-05-01',
   toDate: '2025-05-25',
   folderId: '',
-  executionId: ''
+  executionId: 'IFFcwOf4T1miptbI'
 };
 
 try {
