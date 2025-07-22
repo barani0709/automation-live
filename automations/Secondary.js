@@ -25,7 +25,7 @@ const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const AZURE_CONTAINER_NAME = 'secondary-reports';
 const AZURE_TABLE_NAME = 'secondary';
 const DOWNLOADS_PATH = path.join('secondary_sales_data');
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/6d0f1b49-eeb9-44d5-80c3-dc9b89c2484a';
+const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/6d0f1b49-eeb9-44d5-80c3-dc9b89c2484a';
 
 let input = {
   fromMonth: 'Apr',

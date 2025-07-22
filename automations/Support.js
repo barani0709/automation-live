@@ -25,7 +25,7 @@ const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const CONTAINER_NAME = 'support';
 const TABLE_NAME = 'support';
 const DOWNLOADS_PATH = path.join('downloads');
-const WEBHOOK_URL = 'https://elbrit-dev.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
+const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 let input = {
   months: ['Jun'],
