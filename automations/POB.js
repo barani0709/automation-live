@@ -21,8 +21,8 @@ const TABLE_NAME = 'pob';
 
 // === Input Config ===
 let configInput = {
-  fromDate: '2025-05-01',
-  toDate: '2025-05-25',
+  fromDate: '2025-07-01',
+  toDate: '2025-07-25',
   folderId: '',
   executionId: 'IFFcwOf4T1miptbI'
 };
@@ -177,7 +177,7 @@ async function processDivisions() {
   await fs.mkdir(downloadsPath, { recursive: true });
   const formattedFromDate = `${fromDate.getFullYear()}-${(fromDate.getMonth() + 1).toString().padStart(2, '0')}-${fromDate.getDate().toString().padStart(2, '0')}`;
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true });
 
   try {

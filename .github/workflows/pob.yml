@@ -1,0 +1,50 @@
+name: 📊 POB Daily Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      fromDate:
+        description: 'From Date (YYYY-MM-DD format, e.g., 2025-07-01)'
+        required: true
+        default: '2025-07-01'
+      toDate:
+        description: 'To Date (YYYY-MM-DD format, e.g., 2025-07-25)'
+        required: true
+        default: '2025-07-25'
+
+jobs:
+  run-pob-automation:
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_STORAGE_ACCOUNT: elbrit
+      AZURE_STORAGE_KEY: ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz887WWm2zuAe3RVzRJ3XiXduK+AStdVeiBA==
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🎭 Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: 🧪 Set INPUT_JSON from Workflow Inputs
+        run: |
+          echo "INPUT_JSON={\"fromDate\":\"${{ github.event.inputs.fromDate }}\",\"toDate\":\"${{ github.event.inputs.toDate }}\"}" >> $GITHUB_ENV
+
+      - name: 🚀 Run POB Automation Script
+        run: node automations/POB.js
+
+      - name: 📤 Upload XLSX Reports (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pob-daily-xlsx
+          path: pob_daily_data/ 
