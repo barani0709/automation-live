@@ -10,6 +10,10 @@ import {
   TableClient,
   AzureNamedKeyCredential
 } from '@azure/data-tables';
+import {
+  clearOldFiles,
+  loginToEcubix
+} from './ecubix-utils.js';
 
 config();
 
@@ -174,6 +178,7 @@ async function selectToDate(page, toDate) {
 
 // === Main Automation ===
 async function processDivisions() {
+  await clearOldFiles(downloadsPath);
   await fs.mkdir(downloadsPath, { recursive: true });
   const formattedFromDate = `${fromDate.getFullYear()}-${(fromDate.getMonth() + 1).toString().padStart(2, '0')}-${fromDate.getDate().toString().padStart(2, '0')}`;
 
@@ -186,12 +191,7 @@ async function processDivisions() {
       const page = await context.newPage();
 
       try {
-        await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx');
-        await page.locator('#txtUserName').fill('E00134');
-        await page.locator('#txtPassword').fill('Elbrit9999');
-        await page.locator('#btnLogin').click();
-        await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').waitFor({ state: 'visible', timeout: 10000 });
-        await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').click();
+        await loginToEcubix(page);
 
         await page.goto('https://elbrit.ecubix.com/Apps/Report/Sales/frmCustomerPOBAnalysis.aspx?a_id=802');
         await page.waitForLoadState('networkidle');
