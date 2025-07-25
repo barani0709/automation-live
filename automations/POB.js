@@ -74,16 +74,16 @@ async function triggerWebhook(partitionKey) {
     console.log(`🔔 Triggering webhook with data:`, webhookData);
     console.log(`🌐 POST URL: ${WEBHOOK_URL}`);
     
-    // Custom JSON serialization to use single quotes for Type array (display only)
-    const displayJson = JSON.stringify(webhookData).replace(/"Type":\["([^"]+)"\]/, '"Type":[\'$1\']');
-    console.log(`📄 POST Body: ${displayJson}`);
+    // Create JSON with single quotes for Type array
+    const jsonWithSingleQuotes = JSON.stringify(webhookData).replace(/"Type":\["([^"]+)"\]/, '"Type":[\'$1\']');
+    console.log(`📄 POST Body: ${jsonWithSingleQuotes}`);
 
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(webhookData)
+      body: jsonWithSingleQuotes
     });
 
     if (response.ok) {

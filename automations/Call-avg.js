@@ -70,7 +70,7 @@ async function triggerWebhook(partitionKey) {
     
     const webhookData = {
       Date: formattedDate,
-      Drop: "true",
+      Drop: "false",
       flow: "call",
       Type: ['callavg']
     };
