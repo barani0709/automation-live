@@ -97,22 +97,29 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
     }
 
     const divisionRaw = match[1].replace(/_/g, ' ');
-    const blobPath = `${year}/${month}/${file}`;
+    const fileDate = match[2]; // Extract the date from filename (YYYY-MM-DD)
+    
+    // Parse the file date to get the correct year and month
+    const fileDateObj = new Date(fileDate);
+    const fileYear = fileDateObj.getFullYear();
+    const fileMonth = fileDateObj.toLocaleString('default', { month: 'short' }).toLowerCase();
+    
+    const blobPath = `${fileYear}/${fileMonth}/${file}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
     const buffer = await fs.readFile(path.join(directory, file));
 
     await blockBlobClient.uploadData(buffer, {
-      tags: { division: divisionRaw, month, year: year.toString() }
+      tags: { division: divisionRaw, month: fileMonth, year: fileYear.toString() }
     });
     console.log(`📤 Uploaded to Azure Blob: ${blobPath}`);
 
     await tableClient.upsertEntity({
-      partitionKey: `${year}-${month}`,
+      partitionKey: `${fileYear}-${fileMonth}`,
       rowKey: `${divisionRaw}`,
       fileUrl: blockBlobClient.url,
       division: divisionRaw,
-      month,
-      year
+      month: fileMonth,
+      year: fileYear
     }, "Replace");
     console.log(`📝 Metadata written for: ${divisionRaw}`);
   }
