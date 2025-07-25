@@ -68,7 +68,7 @@ async function triggerWebhook(partitionKey) {
       Date: formattedDate,
       Drop: "true",
       flow: "crm",
-      Type: ["pob"]
+      Type: ['pob']
     };
 
     console.log(`🔔 Triggering webhook with data:`, webhookData);
