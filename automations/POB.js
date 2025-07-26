@@ -100,15 +100,15 @@ async function triggerWebhook(partitionKey) {
 
 const divisions = [
   'AP ELBRIT',
-  // 'Delhi Elbrit',
-  // 'Elbrit',
-  // 'ELBRIT AURA PROXIMA',
-  // 'Elbrit Bangalore',
-  // 'Elbrit Mysore',
-  // 'KE Aura N Proxima',
-  // 'Elbrit CND',
-  // 'Kerala Elbrit',
-  // 'VASCO'
+  'Delhi Elbrit',
+  'Elbrit',
+  'ELBRIT AURA PROXIMA',
+  'Elbrit Bangalore',
+  'Elbrit Mysore',
+  'KE Aura N Proxima',
+  'Elbrit CND',
+  'Kerala Elbrit',
+  'VASCO'
 ];
 
 // === Upload to Azure ===
