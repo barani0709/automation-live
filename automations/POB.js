@@ -74,16 +74,14 @@ async function triggerWebhook(partitionKey) {
     console.log(`🔔 Triggering webhook with data:`, webhookData);
     console.log(`🌐 POST URL: ${WEBHOOK_URL}`);
     
-    // Create JSON with single quotes for Type array
-    const jsonWithSingleQuotes = JSON.stringify(webhookData).replace(/"Type":\["([^"]+)"\]/, '"Type":[\'$1\']');
-    console.log(`📄 POST Body: ${jsonWithSingleQuotes}`);
+    console.log(`📄 POST Body: ${JSON.stringify(webhookData)}`);
 
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: jsonWithSingleQuotes
+      body: JSON.stringify(webhookData)
     });
 
     if (response.ok) {
@@ -102,15 +100,15 @@ async function triggerWebhook(partitionKey) {
 
 const divisions = [
   'AP ELBRIT',
-  'Delhi Elbrit',
-  'Elbrit',
-  'ELBRIT AURA PROXIMA',
-  'Elbrit Bangalore',
-  'Elbrit Mysore',
-  'KE Aura N Proxima',
-  'Elbrit CND',
-  'Kerala Elbrit',
-  'VASCO'
+  // 'Delhi Elbrit',
+  // 'Elbrit',
+  // 'ELBRIT AURA PROXIMA',
+  // 'Elbrit Bangalore',
+  // 'Elbrit Mysore',
+  // 'KE Aura N Proxima',
+  // 'Elbrit CND',
+  // 'Kerala Elbrit',
+  // 'VASCO'
 ];
 
 // === Upload to Azure ===

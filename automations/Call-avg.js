@@ -58,7 +58,8 @@ const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
 const selectedMonths = allMonths.slice(allMonths.indexOf(fromMonth), allMonths.indexOf(toMonth) + 1);
 
 const divisions = [
-  'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
+  'AP ELBRIT',
+   'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
   'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
 ];
 
@@ -70,7 +71,7 @@ async function triggerWebhook(partitionKey) {
     
     const webhookData = {
       Date: formattedDate,
-      Drop: "false",
+      Drop: "true",
       flow: "call",
       Type: ['callavg']
     };
