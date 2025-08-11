@@ -20,7 +20,7 @@ const AZURE_STORAGE_KEY = 'ZEGJoULtZM+wqYf7Ls7IIhs3axdSSIp0ceZcHaRjKJeCugfTO7rz8
 const CONTAINER_NAME = 'employeevisit';
 const TABLE_NAME = 'employeevisit';
 const DOWNLOADS_PATH = path.join('daily_visit_data');
-const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
+const WEBHOOK_URL = 'https://elbrit-prod2.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 const divisions = [
   'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',

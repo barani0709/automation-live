@@ -23,7 +23,7 @@ const AZURE_STORAGE_ACCOUNT = process.env.AZURE_STORAGE_ACCOUNT;
 const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const CONTAINER_NAME = 'pob';
 const TABLE_NAME = 'pob';
-const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
+const WEBHOOK_URL = 'https://elbrit-prod2.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 // === Input Config ===
 let configInput = {

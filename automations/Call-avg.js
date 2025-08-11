@@ -25,7 +25,7 @@ const AZURE_STORAGE_KEY = process.env.AZURE_STORAGE_KEY;
 const CONTAINER_NAME = 'callavg';
 const TABLE_NAME = 'callavg';
 const DOWNLOADS_PATH = path.join('call_data');
-const WEBHOOK_URL = 'https://elbrit-prod.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
+const WEBHOOK_URL = 'https://elbrit-prod2.app.n8n.cloud/webhook/d65d4634-5501-4076-a9c3-bac3049f43f8';
 
 let input = {
   fromMonth: 'Jul',
