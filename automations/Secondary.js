@@ -154,7 +154,7 @@ async function processAllDivisions() {
   await fs.mkdir(DOWNLOADS_PATH, { recursive: true });
 
   const divisionStateMap = {
-    'AP ELBRIT': ['Andhra Pradesh', 'Telangana'],
+    'AP ELBRIT': ['AP ELBRIT', 'TELENGANA ELBRIT'],
     'Delhi Elbrit': ['Delhi', 'Punjab', 'Rajasthan', 'uttar pradesh'],
     'Elbrit': ['Tn-Chennai', 'Tn-Coimbatore', 'Tn-Trichy'],
     'ELBRIT AURA PROXIMA': ['Karnataka', 'Tn-Chennai', 'Tn-Coimbatore', 'Tn-Madurai'],
@@ -166,7 +166,7 @@ async function processAllDivisions() {
     'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
   };
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 
@@ -175,54 +175,37 @@ async function processAllDivisions() {
     
     for (const [division, states] of Object.entries(divisionStateMap)) {
       console.log(`\n🚀 Processing Division: ${division}`);
-      await page.waitForTimeout(500);
       await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379', { timeout: 72000 });
-      await page.waitForTimeout(500);
-      await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click({ timeout: 72000 });
-      await page.waitForTimeout(500);
-      await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click({ timeout: 72000 });
+      await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
+      await page.locator(`xpath=//*[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click({ timeout: 72000 });
 
       for (const state of states) {
         console.log(`🌐 State: ${state}`);
-        await page.waitForTimeout(500);
-        await page.locator('#ctl00_CPH_ddlRegion_B-1Img').click({ timeout: 72000 });
-        await page.waitForTimeout(500);
-        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlRegion_DDD_L_LBI') and text()='${state}']`).click({ timeout: 72000 });
+        await page.locator('#ctl00_CPH_ddlRegion_B-1Img').click();
+        await page.locator(`xpath=//*[contains(@id, 'ctl00_CPH_ddlRegion_DDD_L_LBI') and text()='${state}']`).click({ timeout: 72000 });
 
-        await page.waitForTimeout(500);
-        await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click({ timeout: 72000 });
+        await page.locator('#ctl00_CPH_uclFromMonth_imgOK').click();
         await page.waitForTimeout(1000);
-        await page.waitForTimeout(500);
-        await page.locator('#changeYearMP').click({ timeout: 72000 });
-        await page.waitForTimeout(500);
+        await page.locator('#changeYearMP').click();
         const fromYearId = await getYearIdFromPopup(page, year);
+        await page.locator(fromYearId).click({ force: true });
         await page.waitForTimeout(500);
-        await page.locator(fromYearId).click({ force: true, timeout: 72000 });
-        await page.waitForTimeout(500);
-        await page.getByText(fromMonth, { exact: true }).click({ timeout: 72000 });
+        await page.getByText(fromMonth, { exact: true }).click();
 
-        await page.waitForTimeout(500);
-        await page.locator('#ctl00_CPH_uclToMonth_imgOK').click({ timeout: 72000 });
+        await page.locator('#ctl00_CPH_uclToMonth_imgOK').click();
         await page.waitForTimeout(1000);
-        await page.waitForTimeout(500);
-        await page.locator('#changeYearMP').click({ timeout: 72000 });
-        await page.waitForTimeout(500);
+        await page.locator('#changeYearMP').click();
         const toYearId = await getYearIdFromPopup(page, year);
+        await page.locator(toYearId).click({ force: true });
         await page.waitForTimeout(500);
-        await page.locator(toYearId).click({ force: true, timeout: 72000 });
-        await page.waitForTimeout(500);
-        await page.getByText(toMonth, { exact: true }).click({ timeout: 72000 });
+        await page.getByText(toMonth, { exact: true }).click();
 
-        await page.waitForTimeout(500);
-        await page.locator('#ctl00_CPH_rptLayout_ddlLayout_B-1Img').click({ timeout: 72000 });
-        await page.waitForTimeout(500);
-        await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click({ timeout: 72000 });
+        await page.locator('#ctl00_CPH_rptLayout_ddlLayout_B-1Img').click();
+        await page.locator(`xpath=//*[contains(@id, 'ctl00_CPH_rptLayout_ddlLayout_DDD_L_LBI') and text()='Automation']`).click({ timeout: 72000 });
 
         try {
-          await page.waitForTimeout(500);
           const downloadPromise = page.waitForEvent('download', { timeout: 72000 });
-          await page.waitForTimeout(500);
-          await page.locator('#ctl00_CPH_btnExport img').click({ timeout: 72000 });
+          await page.locator('#ctl00_CPH_btnExport img').click();
           const download = await downloadPromise;
 
           const fileName = `Secondary_${division}_${state}_${fromMonth}_${year}.xlsx`;
