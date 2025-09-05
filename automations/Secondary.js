@@ -175,7 +175,7 @@ async function processAllDivisions() {
     
     for (const [division, states] of Object.entries(divisionStateMap)) {
       console.log(`\n🚀 Processing Division: ${division}`);
-      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379');
+      await page.goto('https://elbrit.ecubix.com/Apps/Report/rptPriSecStockist.aspx?a_id=379', { timeout: 72000 });
       await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
       await page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and text()='${division}']`).click();
 
