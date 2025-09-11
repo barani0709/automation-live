@@ -176,7 +176,9 @@ async function uploadToAzureBlobAndTable(directory, year, month) {
 
 // === Date Selection Helpers ===
 async function selectFromDate(page, fromDate) {
-  await page.locator('#ctl00_CPH_Image2').click();
+  await page.waitForTimeout(500);
+  await page.locator('#ctl00_CPH_Image2').click({ timeout: 72000 });
+  await page.waitForTimeout(500);
   const targetMonth = fromDate.toLocaleString('default', { month: 'long' });
   const targetYear = fromDate.getFullYear();
   const targetDay = String(fromDate.getDate()).padStart(2, '0');
@@ -189,23 +191,28 @@ async function selectFromDate(page, fromDate) {
     const currentDate = new Date(`${displayedMonth} 1, ${displayedYear}`);
     const targetDate = new Date(targetYear, fromDate.getMonth());
     if (targetDate > currentDate) {
-      await page.locator('//*[@id="ctl00_CPH_DateFromDate_nextArrow"]').click();
+      await page.waitForTimeout(500);
+      await page.locator('//*[@id="ctl00_CPH_DateFromDate_nextArrow"]').click({ timeout: 72000 });
     } else {
-      await page.locator('//*[@id="ctl00_CPH_DateFromDate_prevArrow"]').click();
+      await page.waitForTimeout(500);
+      await page.locator('//*[@id="ctl00_CPH_DateFromDate_prevArrow"]').click({ timeout: 72000 });
     }
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
   }
 
   const fullDateTitle = `${targetMonth} ${targetDay}, ${targetYear}`;
   const daySelector = `xpath=//*[contains(@title,"${fullDateTitle}")]`;
   const dayCell = page.locator(daySelector);
   if (await dayCell.count() === 0) throw new Error(`❌ From Date not found: ${fullDateTitle}`);
-  await dayCell.first().click();
+  await page.waitForTimeout(500);
+  await dayCell.first().click({ timeout: 72000 });
 }
 
 async function selectToDate(page, toDate) {
-  await page.locator('#ctl00_CPH_Image1').click();
-  await page.waitForSelector('//*[@id="ctl00_CPH_CalendarExtender1_title"]', { timeout: 3000 });
+  await page.waitForTimeout(500);
+  await page.locator('#ctl00_CPH_Image1').click({ timeout: 72000 });
+  await page.waitForTimeout(500);
+  await page.waitForSelector('//*[@id="ctl00_CPH_CalendarExtender1_title"]', { timeout: 72000 });
 
   const targetMonth = toDate.toLocaleString('default', { month: 'long' });
   const targetYear = toDate.getFullYear();
@@ -220,16 +227,19 @@ async function selectToDate(page, toDate) {
     const currentDate = new Date(`${displayedMonth} 1, ${displayedYear}`);
     const targetDate = new Date(targetYear, toDate.getMonth());
     if (targetDate > currentDate) {
-      await page.locator('//*[@id="ctl00_CPH_CalendarExtender1_nextArrow"]').click();
+      await page.waitForTimeout(500);
+      await page.locator('//*[@id="ctl00_CPH_CalendarExtender1_nextArrow"]').click({ timeout: 72000 });
     } else {
-      await page.locator('//*[@id="ctl00_CPH_CalendarExtender1_prevArrow"]').click();
+      await page.waitForTimeout(500);
+      await page.locator('//*[@id="ctl00_CPH_CalendarExtender1_prevArrow"]').click({ timeout: 72000 });
     }
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
   }
 
   const dayLocator = page.locator(`//div[contains(@id, 'ctl00_CPH_CalendarExtender1_day_') and contains(@title, "${targetDateText}")]`);
-  await dayLocator.first().waitFor({ timeout: 1000 });
-  await dayLocator.first().click();
+  await dayLocator.first().waitFor({ timeout: 72000 });
+  await page.waitForTimeout(500);
+  await dayLocator.first().click({ timeout: 72000 });
 }
 
 // === Main Automation ===
@@ -249,23 +259,35 @@ async function processDivisions() {
       try {
         await loginToEcubix(page);
 
-        await page.goto('https://elbrit.ecubix.com/Apps/Report/Sales/frmCustomerPOBAnalysis.aspx?a_id=802');
+        await page.waitForTimeout(500);
+        await page.goto('https://elbrit.ecubix.com/Apps/Report/Sales/frmCustomerPOBAnalysis.aspx?a_id=802', { timeout: 72000 });
+        await page.waitForTimeout(500);
         await page.waitForLoadState('networkidle');
 
-        await page.locator('#ctl00_CPH_chkCustomerType_0').check();
-        await page.locator('#ctl00_CPH_rbldatemonth_1').click();
+        await page.waitForTimeout(500);
+        await page.locator('#ctl00_CPH_chkCustomerType_0').check({ timeout: 72000 });
+        await page.waitForTimeout(500);
+        await page.locator('#ctl00_CPH_rbldatemonth_1').click({ timeout: 72000 });
 
+        await page.waitForTimeout(500);
         await selectFromDate(page, fromDate);
+        await page.waitForTimeout(500);
         await selectToDate(page, toDate);
 
-        await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click();
-        await page.locator('#ctl00_CPH_ddlDivision_DDD_L_LBT').waitFor({ timeout: 10000 });
+        await page.waitForTimeout(500);
+        await page.locator('#ctl00_CPH_ddlDivision_B-1Img').click({ timeout: 72000 });
+        await page.waitForTimeout(500);
+        await page.locator('#ctl00_CPH_ddlDivision_DDD_L_LBT').waitFor({ timeout: 72000 });
+        await page.waitForTimeout(500);
         const divisionOption = page.locator(`xpath=//td[contains(@id, 'ctl00_CPH_ddlDivision_DDD_L_LBI') and normalize-space(text())='${division}']`);
-        await divisionOption.waitFor({ timeout: 10000 });
-        await divisionOption.click();
+        await divisionOption.waitFor({ timeout: 72000 });
+        await page.waitForTimeout(500);
+        await divisionOption.click({ timeout: 72000 });
 
-        const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
-        await page.locator('#ctl00_CPH_btnDownload').click();
+        await page.waitForTimeout(500);
+        const downloadPromise = page.waitForEvent('download', { timeout: 72000 });
+        await page.waitForTimeout(500);
+        await page.locator('#ctl00_CPH_btnDownload').click({ timeout: 72000 });
         const download = await downloadPromise.catch(() => null);
 
         if (!download) {
