@@ -171,7 +171,7 @@ async function process() {
       try {
         await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx');
         await page.locator('#txtUserName').fill('E00134');
-        await page.locator('#txtPassword').fill('Elbrit9999');
+        await page.locator('#txtPassword').fill('Elbrit999');
         await page.locator('#btnLogin').click();
         await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA', { timeout: 10000 }).click();
 

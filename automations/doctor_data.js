@@ -33,7 +33,7 @@ async function runMSLSummaryAutomation() {
     });
 
     await page.locator('#txtUserName').fill('E00134');
-    await page.locator('#txtPassword').fill('Elbrit9999');
+    await page.locator('#txtPassword').fill('Elbrit999');
     await page.locator('#btnLogin').click();
 
     await page.locator('#pcSubscriptionAlert_btnRemindMeLaterSA').waitFor({ state: 'visible', timeout: 10000 });

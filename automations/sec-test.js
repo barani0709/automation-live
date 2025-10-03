@@ -138,7 +138,7 @@ async function processAllDivisions() {
 
   await page.goto('https://elbrit.ecubix.com/Apps/AccessRights/frmLogin.aspx');
   await page.fill('#txtUserName', 'E00134');
-  await page.fill('#txtPassword', 'Elbrit9999');
+  await page.fill('#txtPassword', 'Elbrit999');
   await page.click('#btnLogin');
 
   try {

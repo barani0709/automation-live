@@ -17,7 +17,7 @@ export async function loginToEcubix(page) {
     timeout: 60000
   });
   await page.fill('#txtUserName', 'E00134');
-  await page.fill('#txtPassword', 'Elbrit9999');
+  await page.fill('#txtPassword', 'Elbrit999');
   await page.click('#btnLogin');
 
   try {
