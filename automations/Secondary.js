@@ -163,7 +163,8 @@ async function processAllDivisions() {
     'Elbrit Mysore': ['Karnataka'],
     'KE Aura N Proxima': ['Kerala'],
     'Kerala Elbrit': ['Kerala'],
-    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore']
+    'VASCO': ['Tn-Chennai', 'Tn-Coimbatore'],
+    'Vasco Karnataka': ['Karnataka']
   };
 
   const browser = await chromium.launch({ headless: true });
