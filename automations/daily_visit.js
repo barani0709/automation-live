@@ -18,7 +18,7 @@ console.log(`🧭 Using executionId: ${executionId}`);
 // 🔁 Divisions
 const divisions = [
   'AP ELBRIT', 'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
-  'KE Aura N Proxima', 'Elbrit CND', 'KA Elbrit', 'Kerala Elbrit', 'VASCO'
+  'KE Aura N Proxima', 'Elbrit CND', 'KA Elbrit', 'Kerala Elbrit', 'VASCO','Vasco Karnataka'
 ];
 
 // 📅 Yesterday’s date
