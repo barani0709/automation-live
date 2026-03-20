@@ -49,7 +49,7 @@ const downloadsPath = path.join(`DRSERVICE_${targetYear}`);
 const divisions = [
   'AP ELBRIT', 
   'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
-  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
+  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO','Vasco Karnataka'
 ];
 
 async function triggerWebhook(partitionKey) {
