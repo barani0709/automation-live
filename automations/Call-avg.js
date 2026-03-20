@@ -60,7 +60,7 @@ const selectedMonths = allMonths.slice(allMonths.indexOf(fromMonth), allMonths.i
 const divisions = [
   'AP ELBRIT',
    'Delhi Elbrit', 'Elbrit', 'ELBRIT AURA PROXIMA',
-  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO'
+  'KE Aura N Proxima', 'Elbrit CND', 'Elbrit Bangalore', 'Elbrit Mysore', 'Kerala Elbrit', 'VASCO','Vasco Karnataka'
 ];
 
 async function triggerWebhook(partitionKey) {
