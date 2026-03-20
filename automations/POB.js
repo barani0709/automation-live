@@ -108,7 +108,7 @@ const divisions = [
   'KE Aura N Proxima',
   'Elbrit CND',
   'Kerala Elbrit',
-  'VASCO'
+  'VASCO','Vasco Karnataka'
 ];
 
 // === Upload to Azure ===
