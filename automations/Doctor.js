@@ -120,7 +120,7 @@ async function process() {
       '#ctl00_CPH_chkDivision_RB6_I_D',
       '#ctl00_CPH_chkDivision_RB7_I_D',
       '#ctl00_CPH_chkDivision_RB8_I_D',
-      '#ctl00_CPH_chkDivision_RB9_I_D'
+      '#ctl00_CPH_chkDivision_RB9_I_D','#ctl00_CPH_chkDivision_RB10_I_D'
     ];
 
     for (const selector of divisionCheckboxIds) {
